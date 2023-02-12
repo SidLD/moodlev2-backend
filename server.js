@@ -40,6 +40,8 @@ const verifyToken = async (req,res, next) => {
             req.user.username = decoded.username;
             next(); 
         })
+    }else{
+        res.json({message:"Access Denied"})
     }
 }
 
@@ -219,7 +221,7 @@ app.delete("student", verifyToken, async (req,res) => {
                 await bcrypt.compare(hashedPassword, dbUser.password)
                     .then(async isMatch => {
                         if(isMatch){
-                            await Student.deleteById(req.user.id)
+                            await Student.deleteOne({_id:req.user.id})
                             .then(
                                 res.json({message: "Success"})
                             )
@@ -243,29 +245,72 @@ app.delete("student", verifyToken, async (req,res) => {
 
 
 
+//Collections
+app.get("/collection", async (req,res) => {
+    await Collection.find({})
+    .then(data => {
+        res.json({message: "Success", data: data})
+    })
+})
+/***
+ * For Admin access only
+ * Required Data
+ * name
+ */
+app.post("/collection", verifyToken, async (req,res) => {
+    console.log(req.body)
+    if(req.user.type === "admin"){
+        const newCollection = new Collection({
+            name: req.body.name
+        })
+        await newCollection.save();
+        res.json({message:"Success"})
+    }else{
+        res.json({message:"Access Denied"})
+    }
+})
+/***
+ * For Admin access only
+ * Required Data
+ * collectionId
+ */
+app.delete("/collection", verifyToken, async (req,res) => {
+    if(req.user.type === "admin"){
+       await Collection.deleteOne({_id:req.body.collectionId});
+       res.json({message:"Success"})
+    }else{
+        res.json({message: "Operation Denied"})
+    }
+})
+
+
 
 
 
 
 //Admin
-app.post("/admin/register", async (req,res) => {
+app.post("/admin/register", verifyToken,async (req,res) => {
     //username, password, gender, email required
-    const user = req.body;
-    const ifTakenEmail = await Admin.findOne({email: user.email});
-    const ifTakenUsername = await Admin.findOne({username: user.username});
+    if(req.user.type === "admin"){
+        const user = req.body;
+        const ifTakenEmail = await Admin.findOne({email: user.email});
+        const ifTakenUsername = await Admin.findOne({username: user.username});
 
-    if(ifTakenEmail || ifTakenUsername){
-        res.json({message:"Username or Email has been taken"});
+        if(ifTakenEmail || ifTakenUsername){
+            res.json({message:"Username or Email has been taken"});
+        }else{
+            const hashedPassword = await bcrypt.hash(user.password, 10);
+            const dbUser = new Admin({
+                username: user.username,
+                email: user.email,
+                password: hashedPassword,
+                gender: user.gender
+            })
+            dbUser.save();
+            res.json({message:"Success"});
+        }
     }else{
-        const hashedPassword = await bcrypt.hash(user.password, 10);
-        const dbUser = new Admin({
-            username: user.username,
-            email: user.email,
-            password: hashedPassword,
-            gender: user.gender
-        })
-        dbUser.save();
-        res.json({message:"Success"});
+        res.json({message:"Operation Denied"});
     }
 })
 app.post("/admin/login", async (req,res) => {
@@ -323,9 +368,8 @@ app.get("/admin", verifyToken, async (req,res) => {
     }
 })
 
-//Collections
-
 //Exams
+
 
 //Records
 
