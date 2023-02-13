@@ -3,7 +3,8 @@ const mongoose = require('mongoose');
 //student status is pending or approved
 const examSchema = mongoose.Schema({
     collection_id:{
-        type: String
+        type: String,
+        required: true
     },
     dateTimeStart:{
         type: Date
@@ -11,13 +12,13 @@ const examSchema = mongoose.Schema({
     dateTimeEnd:{
         type: Date
     },
-    Duration:{
+    duration : {
         type: String
     },
     itemNumber:{
         type: Number
     },
-    student_id: {
+    admin_id: {
         type: String
     }
 

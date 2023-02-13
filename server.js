@@ -21,31 +21,11 @@ const Admin = require("./schemas/adminSchema");
 const Collection = require("./schemas/collectionSchema");
 const Exam = require("./schemas/examSchema");
 const Record = require("./schemas/recordSchema");
+const Question = require("./schemas/questionSchema");
 
-//functions
-const verifyToken = async (req,res, next) => {
-    const token = req.headers['x-access-token']?.split(' ')[1];
-    //Decoded data = id, username, type
-    // console.log(token);
-    req.user = {};
-    if(token){
-        jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-            if(err) return res.json({
-                isLoggingIn: false,
-                message: "Failed to Authenticate",
-                err: err
-            })
-            req.user.type = decoded.type;
-            req.user.id = decoded.id;
-            req.user.username = decoded.username;
-            next(); 
-        })
-    }else{
-        res.json({message:"Access Denied"})
-    }
-}
-
-
+//Functions
+const verifyToken = require("./Utilities/VerifyToken");
+const { json } = require('body-parser');
 
 //API
 //Students
@@ -263,8 +243,10 @@ app.post("/collection", verifyToken, async (req,res) => {
         const newCollection = new Collection({
             name: req.body.name
         })
-        await newCollection.save();
-        res.json({message:"Success"})
+        await newCollection.save((err, room)=>{
+            if(err) res.json({message:"Error", err:err})
+            res.json({message:"Success", id: room.id})
+        })
     }else{
         res.json({message:"Access Denied"})
     }
@@ -276,8 +258,15 @@ app.post("/collection", verifyToken, async (req,res) => {
  */
 app.delete("/collection", verifyToken, async (req,res) => {
     if(req.user.type === "admin"){
-       await Collection.deleteOne({_id:req.body.collectionId});
-       res.json({message:"Success"})
+       await Collection.deleteOne({_id:req.body.collectionId})
+        .then(data => {
+            if(data.deletedCount === 0){
+                res.json({message:"Fail", data:data});
+            }else{
+                res.json({message:"Success", data:data});
+            }
+        })
+       
     }else{
         res.json({message: "Operation Denied"})
     }
@@ -369,13 +358,191 @@ app.get("/admin", verifyToken, async (req,res) => {
 })
 
 //Exams
+app.post("/exam", verifyToken, async (req,res) => {
+    if(req.user.type === "admin"){
+        const {dateTimeStart, dateTimeEnd, collectionId, duration} = req.body;
+        // const data = {
+        //     month:date.getMonth(),
+        //     day:date.getDay(),
+        //     year:date.getFullYear(),
+        //     hour:date.getHours(),
+        //     sec:date.getSeconds(),
+        //     min:date.getMinutes(),
+        // }
+        try {
+            const hour = duration.split('-')[0];
+            const min = duration.split('-')[1];
+            const date = new Exam({
+                dateTimeStart : new Date(dateTimeStart),
+                dateTimeEnd : new Date(dateTimeEnd),
+                duration : hour+"-"+min,
+                admin_id : req.user.id,
+                collection_id : collectionId
+            })
+            await date.save(function(err,room) {
+                if(err) res.json({message:"Invalid Data"});
+                res.json({message:"Success", id:room.id, data: date});
+             });
+        } catch (error) {
+            res.json({message:"Invalid Data"});
+        } 
+    }else{
+        res.json({message:"Operation Denied"});
+    }
+})
+app.get("/exam", verifyToken, async (req,res) => {
+    if(req.user.type === "admin"){
+        const data = await Exam.find({});
+        res.json({message:"Success", data: data})
+    }else{
+        const data = await Exam.find({},{"_id":1, "dateTimeStart":1, "dateTimeEnd":1})
+        res.json({message:"Success", data:data})
+    }
+})
+app.put("/exam", verifyToken, async (req,res) => {
+    if(req.user.type === "admin"){
+        const {dateTimeStart, dateTimeEnd, duration, examId} = req.body;
+        // const data = {
+        //     month:date.getMonth(),
+        //     day:date.getDay(),
+        //     year:date.getFullYear(),
+        //     hour:date.getHours(),
+        //     sec:date.getSeconds(),
+        //     min:date.getMinutes(),
+        // }
+        if(new Date(dateTimeStart) < new Date(dateTimeEnd)){
+            res.json({message:"Invalid Date Time"})
+        }
+        try {
+            const hour = duration.split('-')[0];
+            const min = duration.split('-')[1];
+            const date = new Exam({
+                dateTimeStart : new Date(dateTimeStart),
+                dateTimeEnd : new Date(dateTimeEnd),
+                duration : hour+"-"+min,
+                admin_id : req.user.id,
+            })
+            await date.findByIdAndUpdate( examId,(err, docs) =>{
+                if(err) res.json({message:"Invalid Data"});
+                res.json({message:"Success", data: docs});
 
+            })
+        } catch (error) {
+            res.json({message:"Invalid Data"});
+        } 
+    }else{
+        res.json({message:"Operation Denied"});
+    }
+})
+app.delete("/exam", verifyToken, async (req,res) => {
+    if(req.user.type === "admin"){
+        await Exam.deleteOne({_id:req.body.examId}).then(
+            async data => {
+                await Question.deleteMany({exam_id:req.body.examId})
+                .then(data =>{
+                    if(data.deletedCount === 0){
+                        res.json({message:"Fail", data:data});
+                    }else{
+                        res.json({message:"Success", data:data});
+                    }
+                })
+            }
+        )
+        .catch(err => res.json({message:"Fail", err:err}));
+    }else{
+        res.json({message:"Access Denied"})
+    }
+})
 
 //Records
+app.post("/record", verifyToken, async (req, res) => {
+    if(req.user.type === "admin"){
+        res.json({message:"Why would an admin register a student record, eh?"});
+    }else{
+        const {examId, score, startDate, endDate, itemNumber} = req.body;
+        const record = new Record({
+            exam_id: examId,
+            student_id: req.user.id,
+            dateStart: startDate,
+            dateEnd: endDate,
+            itemNumber: itemNumber,
+            score: score
+        })
+        await record.save((err, room)=>{
+            if(err) res.json({message:"Error", err:err})
+            res.json({message:"Success", id: room.id})
+        })
+    }
 
+})
 
-
-
+//Questions
+/**
+ * type
+ * examId
+ * answer
+ * choices[]
+ */
+app.post("/question", verifyToken, async (req,res) => {
+    if(req.user.type === "admin"){
+        const data = new Question({
+            choices: req.body.choices,
+            answer: req.body.answer,
+            type: req.body.type,
+            question: req.body.question,
+            exam_id: req.body.examId
+        })
+        await data.save((err, doc)=>{
+            if(err) res.json({message:"Fail", err: err})
+            res.json({message:"Success", data: doc})
+        })
+    }else{
+        res.json({message:"Access Denied"})
+    }
+})
+app.get("/question", verifyToken, async (req, res)=>{
+    if(req.user.type === "admin"){
+        await Question.find({})
+        .then(data => {
+            res.json({message:"Success", data:data})
+            }
+        )
+        .catch(err => res.json({message:"Fail", err:err}))
+    }else{
+        await Question.find({},{"question":1, "choices":1, "type":1, "exam_id":1})
+        .then(data => {
+            res.json({message:"Success", data:data})
+            }
+        )
+        .catch(err => res.json({message:"Fail", err:err}))
+    }
+})
+app.post("/question/answer", verifyToken, async (req,res) => {
+    await Question.findById({_id: req.body.questionId})
+        .then(data =>{
+            if(req.body.answer === data.answer){
+                res.json({message:"Correct", data:data})
+            }else{
+                res.json({message:"Incorrect"})
+            }
+        })
+        .catch(err => res.json({message:"Something went wrong", err:err}))
+})
+app.delete("/question", verifyToken, async (req,res) => {
+    if(req.user.type === "admin"){
+        await Question.deleteOne({_id:req.body.questionId})
+            .then(data =>{
+                if(data.deletedCount === 0){
+                    res.json({message:"Fail", data:data});
+                }else{
+                    res.json({message:"Success", data:data});
+                }
+            })
+            .catch(err => res.json({message:"Something went wrong", err:err}))
+    }else{
+        res.json({message:"Access Denied"});
+    }
+})
 
 //Database
 mongoose.set("strictQuery", false);
