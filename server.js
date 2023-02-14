@@ -101,7 +101,7 @@ app.get("/student", verifyToken, async (req,res) => {
             })
 
     }else if(req.user.type === "admin"){
-        await Student.find({})
+        await Student.find({email:1, username:1, _id:1,gender:1, status:1})
             .then(data => {
                 res.json({isLoggingIn: true, data: data})
             })
@@ -475,6 +475,50 @@ app.post("/record", verifyToken, async (req, res) => {
     }
 
 })
+app.get("/record", verifyToken, async (req, res) => {
+    if(req.user.type === "admin"){
+        await Record.find({student_id:req.body.studentId})
+            .then(data => {
+            res.json({message:"Success", data: data})
+        })
+    }else{
+        await Record.find({student_id:req.user.id})
+            .then(data => {
+                res.json({message:"Success", data: data})
+            })
+    }
+})
+app.get("/records", verifyToken, async (req,res) => {
+    if(req.user.type === "admin"){
+        await Record.find({student_id:req.user.id})
+            .then(data => {
+                res.json({message:"Success", data: data})
+            })
+    }else{
+        res.json({message:"Access Denied"});
+    }
+})
+app.delete("/record", verifyToken, async (req,res) => {
+    if(req.user.type === "admin"){
+        await Record.deleteOne({student_id:req.body.studentId})
+        .then(data => {
+            if(data.deletedCount === 0){
+                res.json({message:"Fail", data:data});
+            }else{
+                res.json({message:"Success", data:data});
+            }
+        })
+    }else{
+        await Record.deleteOne({student_id:req.user.id})
+            .then(data => {
+                if(data.deletedCount === 0){
+                    res.json({message:"Fail", data:data});
+                }else{
+                    res.json({message:"Success", data:data});
+                }
+            })
+    }
+})
 
 //Questions
 /**
@@ -543,6 +587,8 @@ app.delete("/question", verifyToken, async (req,res) => {
         res.json({message:"Access Denied"});
     }
 })
+
+
 
 //Database
 mongoose.set("strictQuery", false);
