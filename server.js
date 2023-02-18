@@ -278,29 +278,35 @@ app.delete("/collection", verifyToken, async (req,res) => {
 
 
 //Admin
-app.post("/admin/register", verifyToken,async (req,res) => {
+app.post("/admin/register", async (req, res) => {
     //username, password, gender, email required
-    if(req.user.type === "admin"){
-        const user = req.body;
-        const ifTakenEmail = await Admin.findOne({email: user.email});
-        const ifTakenUsername = await Admin.findOne({username: user.username});
-
-        if(ifTakenEmail || ifTakenUsername){
-            res.json({message:"Username or Email has been taken"});
-        }else{
-            const hashedPassword = await bcrypt.hash(user.password, 10);
-            const dbUser = new Admin({
-                username: user.username,
-                email: user.email,
-                password: hashedPassword,
-                gender: user.gender
-            })
-            dbUser.save();
-            res.json({message:"Success"});
+    // if(req.user.type === "admin"){
+        try {
+            const user = req.body;
+            const ifTakenEmail = await Admin.findOne({email: user.email});
+            const ifTakenUsername = await Admin.findOne({username: user.username});
+    
+            if(ifTakenEmail || ifTakenUsername){
+                res.status(409).send({message:"Username or Email has been taken"});
+            }else{
+                const hashedPassword = await bcrypt.hash(user.password, 10);
+                const dbUser = new Admin({
+                    username: user.username,
+                    email: user.email,
+                    password: hashedPassword,
+                    gender: user.gender,
+                    role: user.role,
+                })
+                dbUser.save();
+                res.status(200).send({message:"Success"});
+            }
+            
+        } catch (error) {
+            console.log("ERR: ", error);    
         }
-    }else{
-        res.json({message:"Operation Denied"});
-    }
+    // }else{
+    //     res.json({message:"Operation Denied"});
+    // }
 })
 app.post("/admin/login", async (req,res,next) => {
     const userLoggingIn = req.body;
@@ -315,7 +321,8 @@ app.post("/admin/login", async (req,res,next) => {
                     const payload = {
                         id: dbUser._id,
                         username: dbUser.username,
-                        type: "admin"            
+                        role: dbUser.role,
+                        gender: dbUser.gender,           
                     }
                     jwt.sign(
                         payload,
