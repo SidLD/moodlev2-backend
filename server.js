@@ -303,12 +303,12 @@ app.post("/admin/register", verifyToken,async (req,res, next) => {
         res.json({message:"Operation Denied"});
     }
 })
-app.post("/admin/login", async (req,res, next) => {
+app.post("/admin/login", async (req,res) => {
     const userLoggingIn = req.body;
     Admin.findOne({email: userLoggingIn.email})
         .then(dbUser => {
             if(!dbUser) {
-                return res.json({message:"Invalid Email or Password"})
+                return res.status(401).send({message:"Invalid Email or Password"})
             }
             bcrypt.compare(userLoggingIn.password, dbUser.password)
             .then(isMatch => {
@@ -323,18 +323,18 @@ app.post("/admin/login", async (req,res, next) => {
                         process.env.JWT_SECRET,
                         {expiresIn: 86400},
                         (err, token) => {
-                            if(err) return res.json({message: err});
-                            return res.json({
+                            if(err) return res.status(401).send({message: err});
+                            return res.status(200).send({
                                 message:"Success",
                                 token: "Bearer "+token
                             });
                         }
                     )
                 }else{
-                    return res.json({message:"Invalid Email or Password"})
+                    return res.status(401).send({message:"Invalid Email or Password"})
                 }
             })
-        })
+        }).catch((err) => next(err));
 })
 app.get("/admin", verifyToken, async (req,res, next) => {
     if(req.user.type === "admin"){
