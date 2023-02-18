@@ -233,6 +233,14 @@ app.get("/collection", async (req,res, next) => {
         res.json({message: "Success", data: data})
     })
 })
+
+app.get("/collection/details", async (req,res, next) => {
+    const params = req.query;
+    await Collection.find({_id: mongoose.Types.ObjectId(params?.id)})
+    .then(data => {
+        res.json({message: "Success", data: data})
+    })
+})
 /***
  * For Admin access only
  * Required Data
