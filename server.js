@@ -29,7 +29,7 @@ const { json } = require('body-parser');
 
 //API
 //Students
-app.post("/student/register", async (req,res) => {
+app.post("/student/register", async (req,res, next) => {
     //username, password, gender, email required
     const user = req.body;
     const ifTakenEmail = await Student.findOne({email: user.email});
@@ -48,8 +48,9 @@ app.post("/student/register", async (req,res) => {
         dbUser.save();
         res.json({message:"Success"});
     }
+    next();
 })
-app.post("/student/login", async (req,res) => {
+app.post("/student/login", async (req,res, next) => {
     const userLoggingIn = req.body;
     console.log(userLoggingIn);
     Student.findOne({email: userLoggingIn.email})
@@ -83,7 +84,7 @@ app.post("/student/login", async (req,res) => {
             })
         })
 })
-app.get("/student", verifyToken, async (req,res) => {
+app.get("/student", verifyToken, async (req,res, next) => {
     if(req.user.type === "student"){
        await Student.findById({_id: req.user.id})
             .then(dbUser => {
@@ -115,7 +116,7 @@ app.get("/student", verifyToken, async (req,res) => {
     Student => oldPassword / newPassword
     Admin => studentId / newPassword
  */
-app.post("/student/update/password", verifyToken, async (req,res) => {
+app.post("/student/update/password", verifyToken, async (req,res, next) => {
     if(req.user.type === "student"){
        await Student.findById({_id: req.user.id})
             .then( async dbUser => {
@@ -160,7 +161,7 @@ app.post("/student/update/password", verifyToken, async (req,res) => {
     Student => gender / email
     Admin => studentId / gender, email, status
  */
-app.post("/student/update", verifyToken, async (req,res) => {
+app.post("/student/update", verifyToken, async (req,res, next) => {
     if(req.user.type === "student"){
         const data = {
             gender: req.body.gender,
@@ -193,7 +194,7 @@ app.post("/student/update", verifyToken, async (req,res) => {
     Student => password / email
     Admin => studentId
  */
-app.delete("student", verifyToken, async (req,res) => {
+app.delete("student", verifyToken, async (req, res, next) => {
     if(req.user.type === "student"){
         await Student.findOne({_id:req.user.id, email: req.body.email})
             .then( async dbUser => {
@@ -226,7 +227,7 @@ app.delete("student", verifyToken, async (req,res) => {
 
 
 //Collections
-app.get("/collection", async (req,res) => {
+app.get("/collection", async (req,res, next) => {
     await Collection.find({})
     .then(data => {
         res.json({message: "Success", data: data})
@@ -237,7 +238,7 @@ app.get("/collection", async (req,res) => {
  * Required Data
  * name
  */
-app.post("/collection", verifyToken, async (req,res) => {
+app.post("/collection", verifyToken, async (req,res, next) => {
     console.log(req.body)
     if(req.user.type === "admin"){
         const newCollection = new Collection({
@@ -256,7 +257,7 @@ app.post("/collection", verifyToken, async (req,res) => {
  * Required Data
  * collectionId
  */
-app.delete("/collection", verifyToken, async (req,res) => {
+app.delete("/collection", verifyToken, async (req,res, next) => {
     if(req.user.type === "admin"){
        await Collection.deleteOne({_id:req.body.collectionId})
         .then(data => {
@@ -308,7 +309,7 @@ app.post("/admin/register", async (req, res) => {
     //     res.json({message:"Operation Denied"});
     // }
 })
-app.post("/admin/login", async (req,res,next) => {
+app.post("/admin/login", async (req,res) => {
     const userLoggingIn = req.body;
     Admin.findOne({email: userLoggingIn.email})
         .then(dbUser => {
@@ -342,7 +343,7 @@ app.post("/admin/login", async (req,res,next) => {
             })
         }).catch((err) => next(err));
 })
-app.get("/admin", verifyToken, async (req,res) => {
+app.get("/admin", verifyToken, async (req,res, next) => {
     if(req.user.type === "admin"){
        await Admin.findById({_id: req.user.id})
             .then(dbUser => {
@@ -365,7 +366,7 @@ app.get("/admin", verifyToken, async (req,res) => {
 })
 
 //Exams
-app.post("/exam", verifyToken, async (req,res) => {
+app.post("/exam", verifyToken, async (req,res, next) => {
     if(req.user.type === "admin"){
         const {dateTimeStart, dateTimeEnd, collectionId, duration} = req.body;
         // const data = {
@@ -397,7 +398,7 @@ app.post("/exam", verifyToken, async (req,res) => {
         res.json({message:"Operation Denied"});
     }
 })
-app.get("/exam", verifyToken, async (req,res) => {
+app.get("/exam", verifyToken, async (req,res, next) => {
     if(req.user.type === "admin"){
         const data = await Exam.find({});
         res.json({message:"Success", data: data})
@@ -406,7 +407,7 @@ app.get("/exam", verifyToken, async (req,res) => {
         res.json({message:"Success", data:data})
     }
 })
-app.put("/exam", verifyToken, async (req,res) => {
+app.put("/exam", verifyToken, async (req,res, next) => {
     if(req.user.type === "admin"){
         const {dateTimeStart, dateTimeEnd, duration, examId} = req.body;
         // const data = {
@@ -441,7 +442,7 @@ app.put("/exam", verifyToken, async (req,res) => {
         res.json({message:"Operation Denied"});
     }
 })
-app.delete("/exam", verifyToken, async (req,res) => {
+app.delete("/exam", verifyToken, async (req,res, next) => {
     if(req.user.type === "admin"){
         await Exam.deleteOne({_id:req.body.examId}).then(
             async data => {
@@ -462,7 +463,7 @@ app.delete("/exam", verifyToken, async (req,res) => {
 })
 
 //Records
-app.post("/record", verifyToken, async (req, res) => {
+app.post("/record", verifyToken, async (req, res, next) => {
     if(req.user.type === "admin"){
         res.json({message:"Why would an admin register a student record, eh?"});
     }else{
@@ -482,7 +483,7 @@ app.post("/record", verifyToken, async (req, res) => {
     }
 
 })
-app.get("/record", verifyToken, async (req, res) => {
+app.get("/record", verifyToken, async (req, res, next) => {
     if(req.user.type === "admin"){
         await Record.find({student_id:req.body.studentId})
             .then(data => {
@@ -495,7 +496,7 @@ app.get("/record", verifyToken, async (req, res) => {
             })
     }
 })
-app.get("/records", verifyToken, async (req,res) => {
+app.get("/records", verifyToken, async (req,res, next) => {
     if(req.user.type === "admin"){
         await Record.find({student_id:req.user.id})
             .then(data => {
@@ -505,7 +506,7 @@ app.get("/records", verifyToken, async (req,res) => {
         res.json({message:"Access Denied"});
     }
 })
-app.delete("/record", verifyToken, async (req,res) => {
+app.delete("/record", verifyToken, async (req,res, next) => {
     if(req.user.type === "admin"){
         await Record.deleteOne({student_id:req.body.studentId})
         .then(data => {
@@ -534,7 +535,7 @@ app.delete("/record", verifyToken, async (req,res) => {
  * answer
  * choices[]
  */
-app.post("/question", verifyToken, async (req,res) => {
+app.post("/question", verifyToken, async (req,res, next) => {
     if(req.user.type === "admin"){
         const data = new Question({
             choices: req.body.choices,
@@ -551,7 +552,7 @@ app.post("/question", verifyToken, async (req,res) => {
         res.json({message:"Access Denied"})
     }
 })
-app.get("/question", verifyToken, async (req, res)=>{
+app.get("/question", verifyToken, async (req, res, next)=>{
     if(req.user.type === "admin"){
         await Question.find({})
         .then(data => {
@@ -568,7 +569,7 @@ app.get("/question", verifyToken, async (req, res)=>{
         .catch(err => res.json({message:"Fail", err:err}))
     }
 })
-app.post("/question/answer", verifyToken, async (req,res) => {
+app.post("/question/answer", verifyToken, async (req,res, next) => {
     await Question.findById({_id: req.body.questionId})
         .then(data =>{
             if(req.body.answer === data.answer){
@@ -579,7 +580,7 @@ app.post("/question/answer", verifyToken, async (req,res) => {
         })
         .catch(err => res.json({message:"Something went wrong", err:err}))
 })
-app.delete("/question", verifyToken, async (req,res) => {
+app.delete("/question", verifyToken, async (req,res, next) => {
     if(req.user.type === "admin"){
         await Question.deleteOne({_id:req.body.questionId})
             .then(data =>{
