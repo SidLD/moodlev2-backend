@@ -309,6 +309,14 @@ app.get("/collection", async (req,res, next) => {
         res.json({message: "Success", data: data})
     })
 })
+
+app.get("/collection/details", async (req,res, next) => {
+    const params = req.query;
+    await Collection.find({_id: mongoose.Types.ObjectId(params?.id)})
+    .then(data => {
+        res.json({message: "Success", data: data})
+    })
+})
 /***
  * For Admin access only
  * Required Data
@@ -351,6 +359,99 @@ app.delete("/collection", verifyToken, async (req,res, next) => {
 
 
 
+<<<<<<< HEAD
+=======
+
+
+
+//Admin
+app.post("/admin/register", async (req, res) => {
+    //username, password, gender, email required
+    // if(req.user.type === "admin"){
+        try {
+            const user = req.body;
+            const ifTakenEmail = await Admin.findOne({email: user.email});
+            const ifTakenUsername = await Admin.findOne({username: user.username});
+    
+            if(ifTakenEmail || ifTakenUsername){
+                res.status(409).send({message:"Username or Email has been taken"});
+            }else{
+                const hashedPassword = await bcrypt.hash(user.password, 10);
+                const dbUser = new Admin({
+                    username: user.username,
+                    email: user.email,
+                    password: hashedPassword,
+                    gender: user.gender,
+                    role: user.role,
+                })
+                dbUser.save();
+                res.status(200).send({message:"Success"});
+            }
+            
+        } catch (error) {
+            console.log("ERR: ", error);    
+        }
+    // }else{
+    //     res.json({message:"Operation Denied"});
+    // }
+})
+app.post("/admin/login", async (req,res) => {
+    const userLoggingIn = req.body;
+    Admin.findOne({email: userLoggingIn.email})
+        .then(dbUser => {
+            if(!dbUser) {
+                return res.status(401).send({message:"Invalid Email or Password"})
+            }
+            bcrypt.compare(userLoggingIn.password, dbUser.password)
+            .then(isMatch => {
+                if(isMatch){
+                    const payload = {
+                        id: dbUser._id,
+                        username: dbUser.username,
+                        role: dbUser.role,
+                        gender: dbUser.gender,           
+                    }
+                    jwt.sign(
+                        payload,
+                        process.env.JWT_SECRET,
+                        {expiresIn: 86400},
+                        (err, token) => {
+                            if(err) return res.status(401).send({message: err});
+                            return res.status(200).send({
+                                message:"Success",
+                                token: "Bearer "+token
+                            });
+                        }
+                    )
+                }else{
+                    return res.status(401).send({message:"Invalid Email or Password"})
+                }
+            })
+        }).catch((err) => next(err));
+})
+app.get("/admin", verifyToken, async (req,res, next) => {
+    if(req.user.type === "admin"){
+       await Admin.findById({_id: req.user.id})
+            .then(dbUser => {
+                const user = {
+                    id : dbUser.id,
+                    username : dbUser.username,
+                    gender : dbUser.gender,
+                    email : dbUser.email,
+                    status : dbUser.status
+                }
+                res.json({isLoggingIn: true, data: user})
+            })
+            .catch(err => {
+                res.json({message: "Failed", err:err})
+            })
+
+    }else {
+        res.json({message: "Access Denied"})
+    }
+})
+
+>>>>>>> b6f2ac3c460f6209efe729b2c1bd8f087766f5af
 //Exams
 app.post("/exam", verifyToken, async (req,res, next) => {
     if(req.user.type === "admin"){
