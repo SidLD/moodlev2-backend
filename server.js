@@ -25,30 +25,49 @@ const Question = require("./schemas/questionSchema");
 
 //Functions
 const verifyToken = require("./Utilities/VerifyToken");
-const { json } = require('body-parser');
 
 //API
 //Students
-app.post("/student/register", async (req,res, next) => {
+app.post("/register", async (req,res, next) => {
     //username, password, gender, email required
-    const user = req.body;
-    const ifTakenEmail = await Student.findOne({email: user.email});
-    const ifTakenUsername = await Student.findOne({username: user.username});
 
-    if(ifTakenEmail || ifTakenUsername){
-        res.json({message:"Username or Email has been taken"});
-    }else{
-        const hashedPassword = await bcrypt.hash(user.password, 10);
-        const dbUser = new Student({
-            username: user.username,
-            email: user.email,
-            password: hashedPassword,
-            gender: user.gender
-        })
-        dbUser.save();
-        res.json({message:"Success"});
+    if(user.type === "admin"){
+        const ifTakenEmail = await Admin.findOne({email: user.email});
+        const ifTakenUsername = await Admin.findOne({username: user.username});
+
+        if(ifTakenEmail || ifTakenUsername){
+            res.status(401).send({message:"User already Exist"})
+        }else{
+            const hashedPassword = await bcrypt.hash(user.password, 10);
+            const dbUser = new Admin({
+                username: user.username,
+                email: user.email,
+                password: hashedPassword,
+                gender: user.gender
+            })
+            dbUser.save();
+            res.json({message:"Success", id:dbUser._id});
+        }
     }
-    next();
+    else if(req.user == "student"){
+        const ifTakenEmail = await Student.findOne({email: user.email});
+        const ifTakenUsername = await Student.findOne({username: user.username});
+    
+        if(ifTakenEmail || ifTakenUsername){
+            res.status(401).send({message:"User already Exist"})
+        }else{
+            const hashedPassword = await bcrypt.hash(user.password, 10);
+            const dbUser = new Student({
+                username: user.username,
+                email: user.email,
+                password: hashedPassword,
+                gender: user.gender
+            })
+            dbUser.save();
+            res.json({message:"Success", id:dbUser._id});
+        }
+        next();
+    }   
 })
 app.post("/student/login", async (req,res, next) => {
     const userLoggingIn = req.body;
@@ -111,6 +130,63 @@ app.get("/student", verifyToken, async (req,res, next) => {
             })
     }
 })
+
+app.post("/admin/login", async (req,res) => {
+    const userLoggingIn = req.body;
+    Admin.findOne({email: userLoggingIn.email})
+        .then(dbUser => {
+            if(!dbUser) {
+                return res.status(401).send({message:"Invalid Email or Password"})
+            }
+            bcrypt.compare(userLoggingIn.password, dbUser.password)
+            .then(isMatch => {
+                if(isMatch){
+                    const payload = {
+                        id: dbUser._id,
+                        username: dbUser.username,
+                        type: "admin"            
+                    }
+                    jwt.sign(
+                        payload,
+                        process.env.JWT_SECRET,
+                        {expiresIn: 86400},
+                        (err, token) => {
+                            if(err) return res.status(401).send({message: err});
+                            return res.status(200).send({
+                                message:"Success",
+                                token: "Bearer "+token
+                            });
+                        }
+                    )
+                }else{
+                    return res.status(401).send({message:"Invalid Email or Password"})
+                }
+            })
+        }).catch((err) => next(err));
+})
+app.get("/admin", verifyToken, async (req,res, next) => {
+    if(req.user.type === "admin"){
+       await Admin.findById({_id: req.user.id})
+            .then(dbUser => {
+                const user = {
+                    id : dbUser.id,
+                    username : dbUser.username,
+                    gender : dbUser.gender,
+                    email : dbUser.email,
+                    status : dbUser.status
+                }
+                res.json({isLoggingIn: true, data: user})
+            })
+            .catch(err => {
+                return res.status(401).send({message:"Admin Not Found"})
+            })
+
+    }else {
+        res.json({message: "Access Denied"})
+    }
+})
+
+
 /**
     Required Data
     Student => oldPassword / newPassword
@@ -275,89 +351,6 @@ app.delete("/collection", verifyToken, async (req,res, next) => {
 
 
 
-
-
-
-//Admin
-app.post("/admin/register", verifyToken,async (req,res, next) => {
-    //username, password, gender, email required
-    if(req.user.type === "admin"){
-        const user = req.body;
-        const ifTakenEmail = await Admin.findOne({email: user.email});
-        const ifTakenUsername = await Admin.findOne({username: user.username});
-
-        if(ifTakenEmail || ifTakenUsername){
-            res.json({message:"Username or Email has been taken"});
-        }else{
-            const hashedPassword = await bcrypt.hash(user.password, 10);
-            const dbUser = new Admin({
-                username: user.username,
-                email: user.email,
-                password: hashedPassword,
-                gender: user.gender
-            })
-            dbUser.save();
-            res.json({message:"Success"});
-        }
-    }else{
-        res.json({message:"Operation Denied"});
-    }
-})
-app.post("/admin/login", async (req,res) => {
-    const userLoggingIn = req.body;
-    Admin.findOne({email: userLoggingIn.email})
-        .then(dbUser => {
-            if(!dbUser) {
-                return res.status(401).send({message:"Invalid Email or Password"})
-            }
-            bcrypt.compare(userLoggingIn.password, dbUser.password)
-            .then(isMatch => {
-                if(isMatch){
-                    const payload = {
-                        id: dbUser._id,
-                        username: dbUser.username,
-                        type: "admin"            
-                    }
-                    jwt.sign(
-                        payload,
-                        process.env.JWT_SECRET,
-                        {expiresIn: 86400},
-                        (err, token) => {
-                            if(err) return res.status(401).send({message: err});
-                            return res.status(200).send({
-                                message:"Success",
-                                token: "Bearer "+token
-                            });
-                        }
-                    )
-                }else{
-                    return res.status(401).send({message:"Invalid Email or Password"})
-                }
-            })
-        }).catch((err) => next(err));
-})
-app.get("/admin", verifyToken, async (req,res, next) => {
-    if(req.user.type === "admin"){
-       await Admin.findById({_id: req.user.id})
-            .then(dbUser => {
-                const user = {
-                    id : dbUser.id,
-                    username : dbUser.username,
-                    gender : dbUser.gender,
-                    email : dbUser.email,
-                    status : dbUser.status
-                }
-                res.json({isLoggingIn: true, data: user})
-            })
-            .catch(err => {
-                res.json({message: "Failed", err:err})
-            })
-
-    }else {
-        res.json({message: "Access Denied"})
-    }
-})
-
 //Exams
 app.post("/exam", verifyToken, async (req,res, next) => {
     if(req.user.type === "admin"){
@@ -480,7 +473,7 @@ app.get("/record", verifyToken, async (req, res, next) => {
     if(req.user.type === "admin"){
         await Record.find({student_id:req.body.studentId})
             .then(data => {
-            res.json({message:"Success", data: data})
+                res.json({message:"Success", data: data})
         })
     }else{
         await Record.find({student_id:req.user.id})
