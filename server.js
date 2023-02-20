@@ -16,8 +16,7 @@ app.use(cors());
 app.use(express.json());
 
 //Schemas
-const Student = require("./schemas/userSchema");
-const Admin = require("./schemas/adminSchema");
+const User = require("./schemas/userSchema");
 const Collection = require("./schemas/collectionSchema");
 const Exam = require("./schemas/examSchema");
 const Record = require("./schemas/recordSchema");
@@ -27,166 +26,10 @@ const Question = require("./schemas/questionSchema");
 const verifyToken = require("./Utilities/VerifyToken");
 
 //API
-//Students
-app.post("/register", async (req,res, next) => {
-    //username, password, gender, email required
-
-    if(user.type === "admin"){
-        const ifTakenEmail = await Admin.findOne({email: user.email});
-        const ifTakenUsername = await Admin.findOne({username: user.username});
-
-        if(ifTakenEmail || ifTakenUsername){
-            res.status(401).send({message:"User already Exist"})
-        }else{
-            const hashedPassword = await bcrypt.hash(user.password, 10);
-            const dbUser = new Admin({
-                username: user.username,
-                email: user.email,
-                password: hashedPassword,
-                gender: user.gender
-            })
-            dbUser.save();
-            res.json({message:"Success", id:dbUser._id});
-        }
-    }
-    else if(req.user == "student"){
-        const ifTakenEmail = await Student.findOne({email: user.email});
-        const ifTakenUsername = await Student.findOne({username: user.username});
-    
-        if(ifTakenEmail || ifTakenUsername){
-            res.status(401).send({message:"User already Exist"})
-        }else{
-            const hashedPassword = await bcrypt.hash(user.password, 10);
-            const dbUser = new Student({
-                username: user.username,
-                email: user.email,
-                password: hashedPassword,
-                gender: user.gender
-            })
-            dbUser.save();
-            res.json({message:"Success", id:dbUser._id});
-        }
-        next();
-    }   
-})
-app.post("/student/login", async (req,res, next) => {
-    const userLoggingIn = req.body;
-    console.log(userLoggingIn);
-    Student.findOne({email: userLoggingIn.email})
-        .then(dbUser => {
-            if(!dbUser) {
-                return res.json({message:"Invalid Email or Password"})
-            }
-            bcrypt.compare(userLoggingIn.password, dbUser.password)
-            .then(isMatch => {
-                if(isMatch){
-                    const payload = {
-                        id: dbUser._id,
-                        username: dbUser.username,
-                        type: "student"            
-                    }
-                    jwt.sign(
-                        payload,
-                        process.env.JWT_SECRET,
-                        {expiresIn: 86400},
-                        (err, token) => {
-                            if(err) return res.json({message: err});
-                            return res.json({
-                                message:"Success",
-                                token: "Bearer "+token
-                            });
-                        }
-                    )
-                }else{
-                    return res.json({message:"Invalid Email or Password"})
-                }
-            })
-        })
-})
-app.get("/student", verifyToken, async (req,res, next) => {
-    if(req.user.type === "student"){
-       await Student.findById({_id: req.user.id})
-            .then(dbUser => {
-                const user = {
-                    id : dbUser.id,
-                    username : dbUser.username,
-                    gender : dbUser.gender,
-                    email : dbUser.email,
-                    status : dbUser.status
-                }
-                res.json({isLoggingIn: true, data: user})
-            })
-            .catch(err => {
-                res.json({message: "Failed", err:err})
-            })
-
-    }else if(req.user.type === "admin"){
-        await Student.find({email:1, username:1, _id:1,gender:1, status:1})
-            .then(data => {
-                res.json({isLoggingIn: true, data: data})
-            })
-            .catch(err => {
-                res.json({message: "Failed", err:err})
-            })
-    }
-})
-
-app.post("/admin/login", async (req,res) => {
-    const userLoggingIn = req.body;
-    Admin.findOne({email: userLoggingIn.email})
-        .then(dbUser => {
-            if(!dbUser) {
-                return res.status(401).send({message:"Invalid Email or Password"})
-            }
-            bcrypt.compare(userLoggingIn.password, dbUser.password)
-            .then(isMatch => {
-                if(isMatch){
-                    const payload = {
-                        id: dbUser._id,
-                        username: dbUser.username,
-                        type: "admin"            
-                    }
-                    jwt.sign(
-                        payload,
-                        process.env.JWT_SECRET,
-                        {expiresIn: 86400},
-                        (err, token) => {
-                            if(err) return res.status(401).send({message: err});
-                            return res.status(200).send({
-                                message:"Success",
-                                token: "Bearer "+token
-                            });
-                        }
-                    )
-                }else{
-                    return res.status(401).send({message:"Invalid Email or Password"})
-                }
-            })
-        }).catch((err) => next(err));
-})
-app.get("/admin", verifyToken, async (req,res, next) => {
-    if(req.user.type === "admin"){
-       await Admin.findById({_id: req.user.id})
-            .then(dbUser => {
-                const user = {
-                    id : dbUser.id,
-                    username : dbUser.username,
-                    gender : dbUser.gender,
-                    email : dbUser.email,
-                    status : dbUser.status
-                }
-                res.json({isLoggingIn: true, data: user})
-            })
-            .catch(err => {
-                return res.status(401).send({message:"Admin Not Found"})
-            })
-
-    }else {
-        res.json({message: "Access Denied"})
-    }
-})
+const userAPI = require("./api/user");
 
 
+app.use(userAPI);
 /**
     Required Data
     Student => oldPassword / newPassword
@@ -358,12 +201,6 @@ app.delete("/collection", verifyToken, async (req,res, next) => {
 })
 
 
-
-<<<<<<< HEAD
-=======
-
-
-
 //Admin
 app.post("/admin/register", async (req, res) => {
     //username, password, gender, email required
@@ -451,7 +288,7 @@ app.get("/admin", verifyToken, async (req,res, next) => {
     }
 })
 
->>>>>>> b6f2ac3c460f6209efe729b2c1bd8f087766f5af
+// >>>>>>> b6f2ac3c460f6209efe729b2c1bd8f087766f5af
 //Exams
 app.post("/exam", verifyToken, async (req,res, next) => {
     if(req.user.type === "admin"){

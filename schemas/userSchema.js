@@ -1,28 +1,40 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
-//student status is pending or approved
-const studentSchema = mongoose.Schema({
+const userSchema = mongoose.Schema(
+  {
     username: {
-        type: String,
-        require: true
+      type: String,
+      required: true,
     },
     password: {
-        type: String,
-        require: true
+      type: String,
+      required: true,
     },
     email: {
-        type: String,
-        require: true
+      type: String,
+      required: true,
     },
     gender: {
-        type: Boolean
+      type: Boolean
+    },
+    role: {
+      type: String,
+      required: true,
+      trim: true,
+      index: true,
+      enum: ["admin", "student"],
     },
     status:{
         type: String,
-        default: 'pending'
+        default: 'pending',
+        trim: true,
+        required: true,
+        enum: ["pending", "approved"],
     }
-}, {
-    timeStampt: true}
-)
+  },
+  {
+    timestamps: true,
+  }
+);
 
-module.exports = mongoose.model("Student", studentSchema);
+module.exports = mongoose.model("user", userSchema);
