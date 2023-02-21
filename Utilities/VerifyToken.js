@@ -20,7 +20,7 @@ const verifyToken = async (req,res, next) => {
             next(); 
         })
     }else{
-        res.json({message:"Access Denied"})
+        res.status(406).json({message:"Token Not Acceptable"})
     }
 }
 

@@ -13,9 +13,23 @@ const userSchema = mongoose.Schema(
     email: {
       type: String,
       required: true,
+      lowercase: true,
+      min:10,
+      validate: {
+        validator: function(v) {
+            return /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(v);
+        },
+        message: "Please enter a valid email"
+      },
+      required: [true, "Email required"]
     },
     gender: {
       type: Boolean
+    },
+    age:{
+      type: Number,
+      min:1,
+      max:100,
     },
     role: {
       type: String,

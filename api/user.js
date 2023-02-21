@@ -15,9 +15,9 @@ app.post("/register", async (req,res, next) => {
     const ifTakenUsername = await User.findOne({username: user.username});
 
     if(ifTakenEmail || ifTakenUsername){
-        res.status(401).send({message:"User already Exist"})
-    }else{
-        const hashedPassword = await bcrypt.hash(user.password, 10);
+        return res.status(401).send({message:"User already Exist"})
+    }
+            const hashedPassword = await bcrypt.hash(user.password, 10);
             const dbUser = new User({
                 username: user.username,
                 email: user.email,
@@ -26,22 +26,28 @@ app.post("/register", async (req,res, next) => {
                 role: user.role,
                 status: "pending"
             })    
-            dbUser.save();
-            res.status(201).json({message:"Success", id:dbUser._id});
-        }
-       
+            dbUser.save().then(
+                data => {
+                    data.password = undefined;
+                    return res.status(201).send({message:"Success", data:data});
+            })
+            .catch(err => {
+                return res.status(401).send({message:"Error", error:err});
+            })
+            
+    
+     
 })
 app.post("/login", async (req,res, next) => {
-
     const userLoggingIn = req.body;
-
-    User.findOne({"email": userLoggingIn.email})
+    User.findOne({email: userLoggingIn.email})
         .then(dbUser => {
             if(!dbUser) {
-                res.status(401).send({message:"Invalid Email or Password"})
+                return res.status(404).send({message:"Incorrect Email or Password"}) 
             }
             bcrypt.compare(userLoggingIn.password, dbUser.password)
             .then(isMatch => {
+                console.log(isMatch)
                 if(isMatch){
                     if(dbUser.status === "approved"){                                          
                         const payload = {
@@ -54,68 +60,95 @@ app.post("/login", async (req,res, next) => {
                             process.env.JWT_SECRET,
                             {expiresIn: 86400},
                             (err, token) => {
-                                if(err) return res.json({message: err});
-                                return res.status(201).json({
+                                if(err) return res.send({message: err});
+                                return res.status(201).send({
                                     message:"Success",
                                     token: "Bearer "+token
                                 });
                             }
                         )
                     }else{
-                        res.status(401).send({message:"User not Aprroved"})
+                        return res.status(401).send({message:"User not Aprroved"})
                     }
                 }else{
-                    res.status(401).send({message:"Invalid Email or Password"})
+                    res.status(400).send({message:"Invalid Email or Password"})
                 }
+            })
+            .catch(err => {
+                return res.status(400).send({message:"Invalid Email or Password", error:err})
             })
         })
 })
 app.get("/user", verifyToken, async (req,res, next) => {
-    const userToGet = req.body.user;
-    if(req.user.role === "student"){
-        //Kay what if karuyag san student kiton an iba na student? magReturn la dapat noh username
-        if(userToGet.username === req.uer.username){
-            await User.findById({_id: req.user.id})
-            .then(dbUser => {
-                const user = {
-                    id : dbUser.id,
-                    username : dbUser.username,
-                    gender : dbUser.gender,
-                    email : dbUser.email,
-                    status : dbUser.status,
-                    role: dbUser.role
-                }
-                res.status(201).json({isLoggingIn: true, data: user})
-            })
-            .catch(err => {
-                res.status(401).send({message: "Something Went Wrong", err:err})
-            })
-        }
-        else{
-            await User.findById({_id: req.user.id})
-            .then(dbUser => {
-                const user = {
-                    username : dbUser.username,
-                    role: dbUser.role,
-                    gender : dbUser.gender,
-                }
-                res.status(201).json({isLoggingIn: true, data: user})
-            })
-            .catch(err => {
-                res.status(401).send({message: "Something Went Wrong", err:err})
-            })
-        }
+    const userToGet = req.body;
+    if(req.user.role === "admin"){
+        await User.where(userToGet).select(["username", "role", "status", "age", "gender", "email"])
+        .then(data => {
+            return res.status(201).send({isLoggingIn: true, data: data})
+        })
+        .catch(err => {
+           return res.status(401).send({message: "Something Went Wrong", err:err})
+        })
     }
-    else if(req.user.type === "admin"){
-        await Student.find({email:1, username:1, _id:1, gender:1, status:1, role:1})
-            .then(data => {
-                res.status(201).json({isLoggingIn: true, data: data})
-            })
-            .catch(err => {
-                res.status(401).json({message: "User does not exist", err:err})
-            }
-        )
+    else{
+        await User.where(userToGet).select(["username", "gender"])
+        .then(data => {
+            res.status(201).send({isLoggingIn: true, data: data})
+        })
+        .catch(err => {
+            res.status(404).send({message: "User does not exist", err:err})
+        })
+           
     }
 })
 
+/**
+ * Kun magUpdate password kailangan san student igLogin iya password & email utro 
+ * 
+ */
+app.put("/user", verifyToken, async (req,res, next) => {
+    const userToBeUpdate = req.body;
+    console.log(userToBeUpdate.userId === undefined)
+    if(userToBeUpdate.userId !== undefined){
+        if(req.user.role === "admin"){
+            User.findOneAndUpdate({_id:userToBeUpdate.userId}, userToBeUpdate, function(err, doc) {
+                if (err) return res.status(400).send({message: err});
+                return res.status(201).send('Succesfully saved.');
+            })
+        }
+        next();
+    }else{
+        const user = await User.findById(req.user.id);
+        user.username = userToBeUpdate.username ? userToBeUpdate.username: user.username
+        user.gender = userToBeUpdate.gender ? userToBeUpdate.gender: user.gender
+        user.age = userToBeUpdate.age ? userToBeUpdate.age: user.age
+        user.email = userToBeUpdate.email ? userToBeUpdate.email: user.email
+        if(userToBeUpdate.password !== undefined){
+            const hashedPassword = await bcrypt.hash(user.password, 10);
+            user.password = hashedPassword
+        }
+        await user.save()
+        .then(data => {
+            data.password = undefined;
+           return res.status(201).send({message: "Success", data:data})
+        })
+        .catch(err => {
+            res.status(400).send({message: err})
+        })
+    }
+})
+
+app.delete("/user", verifyToken, async (req,res,next)=>{
+    const userToBeDeletedId = req.body.userId;
+    if(req.user.role === "admin"){
+        const user = await User.deleteOne({_id: userToBeDeletedId})
+        if(user.deletedCount === 1){
+            res.status(201).json({message:"Success", user:user});
+        }else{
+            res.status(500).json({message:"Something Went Wrong"});
+        }
+    }else{
+        res.status(401).json({message:"Access Denied"})
+    }
+})
 module.exports = app

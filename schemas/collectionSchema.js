@@ -5,7 +5,8 @@ const collectionSchema = mongoose.Schema({
     name: {
         type: String,
         required: true
-    }
+    },
+    
 }, {
     timeStampt: true}
 )

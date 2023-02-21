@@ -30,11 +30,6 @@ const userAPI = require("./api/user");
 
 
 app.use(userAPI);
-/**
-    Required Data
-    Student => oldPassword / newPassword
-    Admin => studentId / newPassword
- */
 app.post("/student/update/password", verifyToken, async (req,res, next) => {
     if(req.user.type === "student"){
        await Student.findById({_id: req.user.id})
