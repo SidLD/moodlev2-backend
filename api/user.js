@@ -10,33 +10,29 @@ const verifyToken = require("../Utilities/VerifyToken")
 
 app.post("/register", async (req,res, next) => {
     //username, password, gender, email required
-    const user = req.body;
-    const ifTakenEmail = await User.findOne({email: user.email});
-    const ifTakenUsername = await User.findOne({username: user.username});
+    const params = req.body;
+    const ifTakenEmail = await User.findOne({email: params.email});
+    const ifTakenUsername = await User.findOne({username: params.username});
 
     if(ifTakenEmail || ifTakenUsername){
         return res.status(401).send({message:"User already Exist"})
     }
-            const hashedPassword = await bcrypt.hash(user.password, 10);
-            const dbUser = new User({
-                username: user.username,
-                email: user.email,
-                password: hashedPassword,
-                gender: user.gender,
-                role: user.role,
-                status: "pending"
-            })    
-            dbUser.save().then(
-                data => {
-                    data.password = undefined;
-                    return res.status(201).send({message:"Success", data:data});
-            })
-            .catch(err => {
-                return res.status(401).send({message:"Error", error:err});
-            })
-            
-    
-     
+    const hashedPassword = await bcrypt.hash(params.password, 10);
+    const dbUser = new User({
+        username: params.username,
+        email: params.email,
+        password: hashedPassword,
+        gender: params.gender,
+        role: params.role,
+        status: "pending"
+        })    
+    dbUser.save( async (err, data) => {
+        if(err) {
+            return res.status(401).send({message:"Error", error:err});
+        }
+       data.password = undefined;
+            return res.status(201).send({message:"Success", data:data});
+        })    
 })
 app.post("/login", async (req,res, next) => {
     const userLoggingIn = req.body;
@@ -102,13 +98,8 @@ app.get("/user", verifyToken, async (req,res, next) => {
     }
 })
 
-/**
- * Kun magUpdate password kailangan san student igLogin iya password & email utro 
- * 
- */
 app.put("/user", verifyToken, async (req,res, next) => {
     const userToBeUpdate = req.body;
-    console.log(userToBeUpdate.userId === undefined)
     if(userToBeUpdate.userId !== undefined){
         if(req.user.role === "admin"){
             User.findOneAndUpdate({_id:userToBeUpdate.userId}, userToBeUpdate, function(err, doc) {
@@ -116,7 +107,7 @@ app.put("/user", verifyToken, async (req,res, next) => {
                 return res.status(201).send('Succesfully saved.');
             })
         }
-        next();
+        return res.status(400).send({message: "Access Denied"});
     }else{
         const user = await User.findById(req.user.id);
         user.username = userToBeUpdate.username ? userToBeUpdate.username: user.username
@@ -130,10 +121,10 @@ app.put("/user", verifyToken, async (req,res, next) => {
         await user.save()
         .then(data => {
             data.password = undefined;
-           return res.status(201).send({message: "Success", data:data})
+            return res.status(201).send({message: "Success", data:data})
         })
         .catch(err => {
-            res.status(400).send({message: err})
+            return res.status(400).send({message: err})
         })
     }
 })

@@ -17,7 +17,6 @@ app.use(express.json());
 
 //Schemas
 const User = require("./schemas/userSchema");
-const Collection = require("./schemas/collectionSchema");
 const Exam = require("./schemas/examSchema");
 const Record = require("./schemas/recordSchema");
 const Question = require("./schemas/questionSchema");
@@ -27,263 +26,24 @@ const verifyToken = require("./Utilities/VerifyToken");
 
 //API
 const userAPI = require("./api/user");
-
+const categoryAPI = require("./api/category");
 
 app.use(userAPI);
-app.post("/student/update/password", verifyToken, async (req,res, next) => {
-    if(req.user.type === "student"){
-       await Student.findById({_id: req.user.id})
-            .then( async dbUser => {
-                await bcrypt.compare(req.body.oldPassword, dbUser.password)
-                .then( async isMatch => {
-                    if(isMatch){
-                        const hashedPassword = await bcrypt.hash(req.body.newPassword, 10);
-                        await Student.findByIdAndUpdate({_id: req.user.id},{password:hashedPassword})
-                                .then(
-                                    res.json({message: "Success"})
-                                )
-                                .catch(err => {
-                                    res.json({message:"Failed", err: err});
-                                })
-                    }else{
-                        res.json({message:"Incorrect Credintials"});   
-                    }
-                })
-                .catch(err => {
-                    res.json({message: "Failed", err: err})
-                });
-            })
-            .catch(err => {
-                res.json({message: "Failed", err:err})
-            })
-
-    }else if(req.user.type === "admin"){
-        //old password, and new password, id
-        const hashedPassword = await bcrypt.hash(req.data.newPassword, 10);
-        await Student.findByIdAndUpdate({_id: req.studentId},{password:hashedPassword})
-                .then(
-                    res.json({message: "Success"})
-                )
-                .catch(err => {
-                    res.json({message:"Failed", err: err});
-                })
-    }
-})
-/**
- * 
-    Required Data
-    Student => gender / email
-    Admin => studentId / gender, email, status
- */
-app.post("/student/update", verifyToken, async (req,res, next) => {
-    if(req.user.type === "student"){
-        const data = {
-            gender: req.body.gender,
-            email: req.body.email
-        }
-        await Student.findByIdAndUpdate({_id: req.user.id},{data})
-        .then(
-            res.json({message: "Success"})
-        )
-        .catch(err => {
-            res.json({message:"Failed", err: err});
-        })
-    }else if(req.user.type === "admin"){
-        const data = {
-            gender: req.body.gender,
-            email: req.body.email,
-            status: req.body.status
-        }
-        await Student.findByIdAndUpdate({_id: req.body.studentId},{data})
-        .then(
-            res.json({message: "Success"})
-        )
-        .catch(err => {
-            res.json({message:"Failed", err: err});
-        })
-    }
-})
-/**
-    Required Data
-    Student => password / email
-    Admin => studentId
- */
-app.delete("student", verifyToken, async (req, res, next) => {
-    if(req.user.type === "student"){
-        await Student.findOne({_id:req.user.id, email: req.body.email})
-            .then( async dbUser => {
-                const hashedPassword = await bcrypt.hash(req.body.password, 10);
-                await bcrypt.compare(hashedPassword, dbUser.password)
-                    .then(async isMatch => {
-                        if(isMatch){
-                            await Student.deleteOne({_id:req.user.id})
-                            .then(
-                                res.json({message: "Success"})
-                            )
-                            .catch(err => {
-                                res.json({message: "Failed", err:err})
-                            })
-                        }else{
-                            res.json({message: "Incorrect Email"})
-                        }
-                    })
-                    .catch()
-            })
-            .catch()
-
-    }
-    else if(req.user.type === "admin"){
-        await Student.deleteById(req.studentId)
-        res.json({message: "Success"});
-    }
-})
+app.use(categoryAPI);
 
 
-
-//Collections
-app.get("/collection", async (req,res, next) => {
-    await Collection.find({})
-    .then(data => {
-        res.json({message: "Success", data: data})
-    })
-})
-
-app.get("/collection/details", async (req,res, next) => {
-    const params = req.query;
-    await Collection.find({_id: mongoose.Types.ObjectId(params?.id)})
-    .then(data => {
-        res.json({message: "Success", data: data})
-    })
-})
-/***
- * For Admin access only
- * Required Data
- * name
- */
-app.post("/collection", verifyToken, async (req,res, next) => {
-    console.log(req.body)
-    if(req.user.type === "admin"){
-        const newCollection = new Collection({
-            name: req.body.name
-        })
-        await newCollection.save((err, room)=>{
-            if(err) res.json({message:"Error", err:err})
-            res.json({message:"Success", id: room.id})
-        })
-    }else{
-        res.json({message:"Access Denied"})
-    }
-})
-/***
- * For Admin access only
- * Required Data
- * collectionId
- */
-app.delete("/collection", verifyToken, async (req,res, next) => {
-    if(req.user.type === "admin"){
-       await Collection.deleteOne({_id:req.body.collectionId})
-        .then(data => {
-            if(data.deletedCount === 0){
-                res.json({message:"Fail", data:data});
-            }else{
-                res.json({message:"Success", data:data});
-            }
-        })
-       
-    }else{
-        res.json({message: "Operation Denied"})
-    }
-})
-
-
-//Admin
-app.post("/admin/register", async (req, res) => {
-    //username, password, gender, email required
-    // if(req.user.type === "admin"){
-        try {
-            const user = req.body;
-            const ifTakenEmail = await Admin.findOne({email: user.email});
-            const ifTakenUsername = await Admin.findOne({username: user.username});
-    
-            if(ifTakenEmail || ifTakenUsername){
-                res.status(409).send({message:"Username or Email has been taken"});
-            }else{
-                const hashedPassword = await bcrypt.hash(user.password, 10);
-                const dbUser = new Admin({
-                    username: user.username,
-                    email: user.email,
-                    password: hashedPassword,
-                    gender: user.gender,
-                    role: user.role,
-                })
-                dbUser.save();
-                res.status(200).send({message:"Success"});
-            }
-            
-        } catch (error) {
-            console.log("ERR: ", error);    
-        }
-    // }else{
-    //     res.json({message:"Operation Denied"});
-    // }
-})
-app.post("/admin/login", async (req,res) => {
-    const userLoggingIn = req.body;
-    Admin.findOne({email: userLoggingIn.email})
-        .then(dbUser => {
-            if(!dbUser) {
-                return res.status(401).send({message:"Invalid Email or Password"})
-            }
-            bcrypt.compare(userLoggingIn.password, dbUser.password)
-            .then(isMatch => {
-                if(isMatch){
-                    const payload = {
-                        id: dbUser._id,
-                        username: dbUser.username,
-                        role: dbUser.role,
-                        gender: dbUser.gender,           
-                    }
-                    jwt.sign(
-                        payload,
-                        process.env.JWT_SECRET,
-                        {expiresIn: 86400},
-                        (err, token) => {
-                            if(err) return res.status(401).send({message: err});
-                            return res.status(200).send({
-                                message:"Success",
-                                token: "Bearer "+token
-                            });
-                        }
-                    )
-                }else{
-                    return res.status(401).send({message:"Invalid Email or Password"})
-                }
-            })
-        }).catch((err) => next(err));
-})
-app.get("/admin", verifyToken, async (req,res, next) => {
-    if(req.user.type === "admin"){
-       await Admin.findById({_id: req.user.id})
-            .then(dbUser => {
-                const user = {
-                    id : dbUser.id,
-                    username : dbUser.username,
-                    gender : dbUser.gender,
-                    email : dbUser.email,
-                    status : dbUser.status
-                }
-                res.json({isLoggingIn: true, data: user})
-            })
-            .catch(err => {
-                res.json({message: "Failed", err:err})
-            })
-
-    }else {
-        res.json({message: "Access Denied"})
-    }
-})
-
-// >>>>>>> b6f2ac3c460f6209efe729b2c1bd8f087766f5af
+app.get('*', function(req, res){
+    res.status(401).send({message:"URI does not exist"});
+});
+app.post('*', function(req, res){
+    res.status(401).send({message:"URI does not exist"});
+});
+app.put('*', function(req, res){
+    res.status(401).send({message:"URI does not exist"});
+});
+app.delete('*', function(req, res){
+    res.status(401).send({message:"URI does not exist"});
+});
 //Exams
 app.post("/exam", verifyToken, async (req,res, next) => {
     if(req.user.type === "admin"){
