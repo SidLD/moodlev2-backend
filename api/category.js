@@ -11,11 +11,11 @@ const verifyToken = require("../Utilities/VerifyToken")
  */
 
 app.get("/category", verifyToken, async (req,res, next) => {
-    const params = req.body;
+    const params = req.query;
     //Pag may name ngane sa params ig search nala an name with 'like';
     //pag wara then pasa an params
     //Dre dapat makita san student an log
-    if(params.name){
+    if(params.name !== undefined){
         await Category.where({"name":{ $regex: '.*' + params.name+ '.*'}})
         .then(data => {
             if(req.user.role === "admin"){
@@ -28,7 +28,7 @@ app.get("/category", verifyToken, async (req,res, next) => {
             }
         })
     }else{
-        await Category.where({params})
+        await Category.where(params)
             .then(data => {
                 if(req.user.role === "admin"){
                     return res.status(200).send({message: "Success", data: data})

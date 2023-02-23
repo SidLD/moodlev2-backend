@@ -27,10 +27,11 @@ const verifyToken = require("./Utilities/VerifyToken");
 //API
 const userAPI = require("./api/user");
 const categoryAPI = require("./api/category");
+const examAPI = require("./api/exam")
 
 app.use(userAPI);
 app.use(categoryAPI);
-
+app.use(examAPI);
 
 app.get('*', function(req, res){
     res.status(401).send({message:"URI does not exist"});
@@ -44,39 +45,8 @@ app.put('*', function(req, res){
 app.delete('*', function(req, res){
     res.status(401).send({message:"URI does not exist"});
 });
-//Exams
-app.post("/exam", verifyToken, async (req,res, next) => {
-    if(req.user.type === "admin"){
-        const {dateTimeStart, dateTimeEnd, collectionId, duration} = req.body;
-        // const data = {
-        //     month:date.getMonth(),
-        //     day:date.getDay(),
-        //     year:date.getFullYear(),
-        //     hour:date.getHours(),
-        //     sec:date.getSeconds(),
-        //     min:date.getMinutes(),
-        // }
-        try {
-            const hour = duration.split('-')[0];
-            const min = duration.split('-')[1];
-            const date = new Exam({
-                dateTimeStart : new Date(dateTimeStart),
-                dateTimeEnd : new Date(dateTimeEnd),
-                duration : hour+"-"+min,
-                admin_id : req.user.id,
-                collection_id : collectionId
-            })
-            await date.save(function(err,room) {
-                if(err) res.json({message:"Invalid Data"});
-                res.json({message:"Success", id:room.id, data: date});
-             });
-        } catch (error) {
-            res.json({message:"Invalid Data"});
-        } 
-    }else{
-        res.json({message:"Operation Denied"});
-    }
-})
+
+
 app.get("/exam", verifyToken, async (req,res, next) => {
     if(req.user.type === "admin"){
         const data = await Exam.find({});

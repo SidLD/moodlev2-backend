@@ -26,13 +26,23 @@ app.post("/register", async (req,res, next) => {
         role: params.role,
         status: "pending"
         })    
-    dbUser.save( async (err, data) => {
+    dbUser.save( async (err, room) => {
         if(err) {
             return res.status(401).send({message:"Error", error:err});
         }
-       data.password = undefined;
-            return res.status(201).send({message:"Success", data:data});
-        })    
+        room.log.push({
+                _id: mongoose.Types.ObjectId(room.id),
+                detail: "Created by"+room.username
+        })
+        room.save( async (err, data) => {
+            if(err) {
+                return res.status(401).send({message:"Error", error:err});
+            }
+            data.password = undefined;
+                return res.status(201).send({message:"Success", data:data});
+            }) 
+       })
+
 })
 app.post("/login", async (req,res, next) => {
     const userLoggingIn = req.body;
@@ -76,8 +86,8 @@ app.post("/login", async (req,res, next) => {
         })
 })
 app.get("/user", verifyToken, async (req,res, next) => {
-    const userToGet = req.body;
-    if(req.user.role === "admin"){
+    const userToGet = req.query;
+    if(req.user.role === "admin" || req.user.role === "superadmin"){
         await User.where(userToGet).select(["username", "role", "status", "age", "gender", "email"])
         .then(data => {
             return res.status(201).send({isLoggingIn: true, data: data})
@@ -100,11 +110,41 @@ app.get("/user", verifyToken, async (req,res, next) => {
 
 app.put("/user", verifyToken, async (req,res, next) => {
     const userToBeUpdate = req.body;
+    //para ine makita kun nanu an guinBago
+    const doChangeEmail = userToBeUpdate.email === undefined ? "": "Update Email, ";
+    const doChageGender = userToBeUpdate.gender === undefined ? "": "Update Gender, ";
+    const doChangeRole = userToBeUpdate.role === undefined ? "": "Update Role, ";
+    const doChangeUsername = userToBeUpdate.username === undefined ? "": "Update Username";
+    //Kun an nagUUpdate ngane iba na tawo dapat undefined ine, otherwise an iya la sarili an pwede maUpdate
     if(userToBeUpdate.userId !== undefined){
-        if(req.user.role === "admin"){
-            User.findOneAndUpdate({_id:userToBeUpdate.userId}, userToBeUpdate, function(err, doc) {
-                if (err) return res.status(400).send({message: err});
-                return res.status(201).send('Succesfully saved.');
+        let user = User.findById(mongoose.Types.ObjectId(userToBeUpdate.userId))
+        let havePermission = false;
+        if(!user){
+            return res.status(400).send({message: "User not Found"});
+        }else if(user.role === "student" && (req.user.role === "admin" || req.user.role === "superadmin")){
+            havePermission = true;
+        }else if(user.role === "admin" && req.user.role === "superadmin"){
+            havePermission = true;
+        }
+        if(havePermission){
+            user.username = userToBeUpdate.username ? userToBeUpdate.username: user.username
+            user.gender = userToBeUpdate.gender ? userToBeUpdate.gender: user.gender
+            user.age = userToBeUpdate.age ? userToBeUpdate.age: user.age
+            user.email = userToBeUpdate.email ? userToBeUpdate.email: user.email
+            if(userToBeUpdate.password !== undefined){
+                const hashedPassword = await bcrypt.hash(user.password, 10);
+                user.password = hashedPassword
+            }
+            user.log.push({
+                _id: mongoose.Types.ObjectId(req.user.id),
+                detail: doChangeEmail + doChangeRole + doChangeUsername + doChageGender
+            })
+            await user.save(async (err, data) => { 
+                if(err) {
+                    return res.status(400).send({message:"Error", error:err})
+                }
+                data.password = undefined;
+                return res.status(200).send({message:"Success", data: data})
             })
         }
         return res.status(400).send({message: "Access Denied"});
@@ -118,20 +158,32 @@ app.put("/user", verifyToken, async (req,res, next) => {
             const hashedPassword = await bcrypt.hash(user.password, 10);
             user.password = hashedPassword
         }
-        await user.save()
-        .then(data => {
-            data.password = undefined;
-            return res.status(201).send({message: "Success", data:data})
+        user.log.push({
+            _id: mongoose.Types.ObjectId(req.user.id),
+            detail: doChangeEmail + doChangeRole + doChangeUsername + doChageGender
         })
-        .catch(err => {
-            return res.status(400).send({message: err})
+        await user.save(async (err, data) => { 
+            if(err) {
+                return res.status(400).send({message:"Error", error:err})
+            }
+            data.password = undefined;
+            return res.status(200).send({message:"Success", data: data})
         })
     }
 })
 
 app.delete("/user", verifyToken, async (req,res,next)=>{
     const userToBeDeletedId = req.body.userId;
-    if(req.user.role === "admin"){
+    let user = User.findById(mongoose.Types.ObjectId(userToBeUpdate.userId))
+    let havePermission = false;
+    if(!user){
+        return res.status(400).send({message: "User not Found"});
+    }else if(user.role === "student" && (req.user.role === "admin" || req.user.role === "superadmin")){
+        havePermission = true;
+    }else if(user.role === "admin" && req.user.role === "superadmin"){
+        havePermission = true;
+    }
+    if(havePermission){
         const user = await User.deleteOne({_id: userToBeDeletedId})
         if(user.deletedCount === 1){
             res.status(201).json({message:"Success", user:user});

@@ -36,7 +36,7 @@ const userSchema = mongoose.Schema(
       required: true,
       trim: true,
       index: true,
-      enum: ["admin", "student"],
+      enum: ["admin", "student", "superadmin"],
     },
     status:{
         type: String,
@@ -44,7 +44,16 @@ const userSchema = mongoose.Schema(
         trim: true,
         required: true,
         enum: ["pending", "approved"],
-    }
+    },log: [
+      {
+          _id: mongoose.SchemaTypes.ObjectId,
+          detail: String,
+          createdAt: {
+              type: Date,
+              default: Date.now()
+          }
+      }
+  ]
   },
   {
     timestamps: true,
