@@ -43,7 +43,7 @@ app.post("/exam", verifyToken, async (req, res) => {
             await newExam.save(async (err,data) => {
                 if(err)  {
                     res.status(401).send({message:"Error", error:err.message})
-                }{
+                }else{
                     res.status(200).send({message:"Success", data: data})
                 }
             })
@@ -87,8 +87,11 @@ app.get("/exam", verifyToken, async (req, res) => {
                 student:mongoose.Types.ObjectId(req.user.id)
             })
             let exam = await Exam.findOne({_id:mongoose.Types.ObjectId(params.exam)})
+                .populate({
+                    path: 'category',
+                    select: '_id name'
+                })
                 .select(['dateTimeStart', 'dateTimeEnd', 'duration', 'itemNumber', 'category']);
-            
             let isContinue = false;
             if(record){
                 isContinue = record.isContinue;
@@ -212,5 +215,20 @@ app.post("/exam/attempt", verifyToken, async (req, res) => {
             }
         }
     )
+})
+
+app.post("/exam/submit", verifyToken, async (req, res) => {
+    const params = req.body;
+    Record.findById(mongoose.Types.ObjectId(params.record))
+        .populate('exam')
+        .populate('user')
+        .populate('answers.question')
+        .exec(async (err, data) => {
+            if(err){
+                res.status(400).send({message: "Error", error: err.message});
+            }else{
+                res.status(200).send({message: "Success", data: data})
+            }
+        })
 })
 module.exports = app
