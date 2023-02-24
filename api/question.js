@@ -8,6 +8,7 @@ const Question = require("../schemas/questionSchema");
 const Exam = require("../schemas/examSchema");
 
 /**
+ * _id: id ine san question
  * exam: id,
     question: String,
     type: String <enum  ["MultipleChoice", "FillInTheBlank", "TrueOrFalse"]>
@@ -19,12 +20,38 @@ const Exam = require("../schemas/examSchema");
             createdAt: Date
     }]
  */
+app.get("/question", verifyToken, async (req, res) => {
+    const params = req.query;
+    Question.find(params)
+        .populate({
+            path: 'exam',
+            select: '_id dateTimeStart dateTimeEnd duration itemNumber category',
+            populate: {
+                path: 'category',
+                select: '_id name'
+            }           
+        })
+        .populate({
+            path: 'log.user',
+            select: '_id firstName lastName'
+        })
+        .exec((err, data) => {
+            if (err) {
+                res.status(400).send({message: "Error", err: err.message})
+            }else{
+                if(req.user.role === "admin" || req.user.role === "superadmin"){
+                    res.status(200).send({message: "Success", data: data})
+                }else{
+                    res.status(401).send({message: "Access Denied"})
+                }
+            }
+        });
+})
 app.post("/question", verifyToken, async (req, res) => {
     const params = req.body;
     if(req.user.role === "admin" || req.user.role === "superadmin"){
         try {
             const {exam, question, answer, choices, type} = params;
-
             const newQuestion = new Question({
                 choices : choices,
                 type : type,
@@ -34,7 +61,7 @@ app.post("/question", verifyToken, async (req, res) => {
             })
             newQuestion.log.push({
                 user: mongoose.Types.ObjectId(req.user.id),
-                detail: "Created Question by "+req.user.username
+                detail: "Created Question by "+req.user.firstName + " "+req.user.lastName
             })
             await newQuestion.save(async (err,room) => {
                 if(err)  {
@@ -59,6 +86,84 @@ app.post("/question", verifyToken, async (req, res) => {
        return res.status(401).send({message: "Access Denied"})
     }
 })
+// Kailangan didi 
+//question (an id san question)
+//exam (an id san exam)
+app.delete("/question", verifyToken, async (req, res) => {
+    const params = req.body;
+    if(params._id === undefined ){
+       res.status(400).send({message: "Question not Found"}) 
+    }else{
+        if(req.user.role === "admin" || req.user.role === "superadmin"){
+            await Question.deleteOne({_id: params._id})
+            .then(async () => {
+               return await Exam.updateMany({questions: params._id}, {$pull: {questions: params._id}})                
+            })
+            .then(async (doc) => {
+                if(doc.modifiedCount > 0){
+                    let exam = await Exam.findById(mongoose.Types.ObjectId(params.exam));
+                    exam.log({
+                        user: mongoose.Types.ObjectId(req.user.id),
+                        detail: "Deleted Question"
+                    })
+                    res.status(200).send({message: "Success", deletedCount: doc.modifiedCount})
+                }else{
+                    res.status(400).send({message: "Error", deletedCount: doc.modifiedCount})
+                }
+            })
+            .catch(err => {
+                res.status(400).send({message: "Error", error: err.message}) 
+            })
+        }
+        else{
+            res.status(401).send({message: "Access Denied"})
+        }
+    }
+})
 
+app.put("/question", verifyToken, async (req, res) => {
+    const params = req.body;
+    if(req.user.role === "admin" || req.user.role === "superadmin"){
+        if(params._id === undefined){
+            res.status(400).send({message: "Question _id is required"})
+        }else{
+            try {
+                const doChangeExam = params.exam === undefined ? "" : "Modified Exam Id, ";
+                const doChangeQuestion = params.question === undefined ? "" :"Modified Question, ";
+                const doChangeAnswer = params.answer === undefined ? "" : "Modified Answer, ";
+                const doChangeChoices = params.choices === undefined ? "" :"Modified Choices, ";
+                const doChangetype = params.type === undefined ? "" : "Modified type, ";
+        
+                
+                console.log(params._id)
+                let question = await Question.findById(mongoose.Types.ObjectId(params._id));
+        
+                question.exam = doChangeExam === "" ? mongoose.Types.ObjectId(question.exam) : mongoose.Types.ObjectId(params.exam)
+                question.question = doChangeQuestion === "" ? question.question : params.question;
+                question.answer = doChangeAnswer === "" ? question.answer : params.answer;
+                question.choices = doChangeChoices === "" ? question.choices : params.choices;
+                question.type = doChangetype === "" ? question.type : params.type;
+
+                question.log.push({
+                    user: mongoose.Types.ObjectId(req.user.id),
+                    detail: doChangeAnswer + doChangeChoices + doChangeExam + doChangeQuestion + doChangetype
+                })
+                await question.save(async (err, data) => { 
+                    if(err) {
+                         res.status(400).send({message:"Error", error:err.message})
+                    }
+                    else{
+                        res.status(200).send({message:"Success", data: data})
+                    }
+                })
+            } catch (error) {
+                res.status(400).send({message: "Error", error: error.message})
+            }
+        }
+    }
+    else{
+        res.status(401).send({message: "Access Denied"})
+    }
+})
 
 module.exports = app

@@ -6,7 +6,8 @@ const bcrypt = require('bcrypt');
 const app = express();
 
 const User = require("../schemas/userSchema");
-const verifyToken = require("../Utilities/VerifyToken")
+const verifyToken = require("../Utilities/VerifyToken");
+const e = require('express');
 
 /**
     role: String <enum  ["student", "admin", "superadmin"]>
@@ -76,7 +77,8 @@ app.post("/login", async (req,res, next) => {
                     if(dbUser.status === "approved"){                                          
                         const payload = {
                             id: dbUser._id,
-                            username: dbUser.username,
+                            firstName: dbUser.firstName,
+                            lastName: dbUser.lastName,
                             role: dbUser.role,  
                         }
                         jwt.sign(
@@ -84,11 +86,14 @@ app.post("/login", async (req,res, next) => {
                             process.env.JWT_SECRET,
                             {expiresIn: 86400},
                             (err, token) => {
-                                if(err)  res.send({message: err});
-                                 res.status(201).send({
-                                    message:"Success",
-                                    token: "Bearer "+token
-                                });
+                                if(err)  {
+                                    res.send({message: err})
+                                }else{
+                                    res.status(201).send({
+                                        message:"Success",
+                                        token: "Bearer "+token
+                                    });
+                                }
                             }
                         )
                     }else{
@@ -125,7 +130,7 @@ app.get("/user", verifyToken, async (req,res, next) => {
             })
     }
     else{
-        await User.where(userToGet).select(["firtName","lastName"])
+        await User.where(userToGet).select(["firstName","lastName"])
         .then(data => {
             res.status(201).send({message: "Success", data: data})
         })

@@ -42,4 +42,4 @@ const examSchema = mongoose.Schema({
     timeStampt: true}
 )
 
-module.exports = mongoose.model("exam", examSchema);
+module.exports = mongoose.model("Exam", examSchema);

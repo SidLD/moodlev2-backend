@@ -55,29 +55,73 @@ app.post("/exam", verifyToken, async (req, res) => {
 })
 app.get("/exam", verifyToken, async (req, res) => {
     const params = req.query;
-    Exam.where(params)
-        .populate({
-            path: 'log.user',
-            select: 'firstName lastName'
-        })
-        .populate({
-            path: 'category',
-            select: 'name _id',
-        })
-        .exec((err, data) => {
-            if (err) {
-                res.status(400).send({message: "Error", err: err.message})
-            }else{
-                if(req.user.role === "admin" || req.user.role === "superadmin"){
-                    res.status(200).send({message: "Success", data: data})
-                }else{
-                    data.forEach(element => {
-                        element.log = undefined;
-                    })
-                    res.status(200).send({message: "Success", data: data})
+    try {
+        if(req.user.role === "admin" || req.user.role === "superadmin"){
+            Exam.findOne(params)
+                .populate({
+                    path: 'log.user',
+                    select: 'firstName lastName',
+                })
+                .populate({
+                    path: 'category',
+                    select: 'name _id',
+                })
+                .populate({
+                    path: 'questions',
+                    populate: {
+                        path: 'log.user',
+                        select: 'firstName lastName',
+                    }
+                })
+                .exec( async (err, data) => {
+                    if (err) {
+                        res.status(400).send({message: "Error", err: err.message})
+                    }else{
+                        res.status(200).send({message: "Success", data: data})
+                    }
+                });
+        }else{
+            Exam.findOne({_id: params._id})
+            .populate({
+                path: 'questions',
+                select: 'question choices type'
+            })
+            .populate({
+                path: 'category',
+                select: '_id name'
+            })
+            .select(['dateTimeStart', 'dateTimeEnd', 'duration', 'itemNumber', 'category'])
+            .exec(async (err, data) => {
+                if(err){
+                    res.status(400).send({message: "Error", error: err.message})
                 }
-            }
-        });
+                else if(data === null){
+                    res.status(404).send({message: "Exam not Found"})   
+                }
+                else{
+
+                    //Mag attemp ngae siya igCheck anay an date
+                    //Kun dre ngane dapat tangalon an questions
+                    if(params.attempt === 'true'){
+                        const today =  new Date();
+                        if(new Date(data.dateTimeStart) < today && new Date(data.dateTimeEnd) > today){
+                            res.status(200).send({message: "Success", data: data})
+                        }else{
+                            data.questions = undefined;
+                            res.status(401).send({message: "Exam is Closed"})
+                        }
+                    }
+                    else{
+                        data.questions = undefined;
+                        res.status(200).send({message: "Success", data: data})
+                    }
+                }
+            })
+        }
+    }
+    catch(error) {
+        res.status(400).send({message: "Error", error: error.message})
+    }
 })
 app.put("/exam", verifyToken, async (req, res) => {
     const params = req.body;
