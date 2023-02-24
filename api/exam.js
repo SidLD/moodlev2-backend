@@ -5,10 +5,11 @@ const app = express();
 
 const verifyToken = require("../Utilities/VerifyToken")
 const Exam = require("../schemas/examSchema");
+const Record = require("../schemas/recordSchema");
 
 /**
  *     ****** Structure *****
-    
+    exam: id / _id
     dateTimeStart : Date
     dateTimeEnd : Date
     category : id
@@ -81,42 +82,22 @@ app.get("/exam", verifyToken, async (req, res) => {
                     }
                 });
         }else{
-            Exam.findOne({_id: params._id})
-            .populate({
-                path: 'questions',
-                select: 'question choices type'
+            let record = await Record.findOne({
+                exam:mongoose.Types.ObjectId(params.exam), 
+                student:mongoose.Types.ObjectId(req.user.id)
             })
-            .populate({
-                path: 'category',
-                select: '_id name'
-            })
-            .select(['dateTimeStart', 'dateTimeEnd', 'duration', 'itemNumber', 'category'])
-            .exec(async (err, data) => {
-                if(err){
-                    res.status(400).send({message: "Error", error: err.message})
+            let exam = await Exam.findOne({_id:mongoose.Types.ObjectId(params.exam)})
+                .select(['dateTimeStart', 'dateTimeEnd', 'duration', 'itemNumber', 'category']);
+            if(exam !== null){
+                const today = new Date();
+                if(new Date(exam.dateTimeStart) < today && new Date(exam.dateTimeEnd) > today){
+                    res.status(200).send({message: " Success", record: record, exam: exam});
+                }else{
+                    res.status(401).send({message: "Exam is Closed", record: record, exam: exam});
                 }
-                else if(data === null){
-                    res.status(404).send({message: "Exam not Found"})   
-                }
-                else{
-
-                    //Mag attemp ngae siya igCheck anay an date
-                    //Kun dre ngane dapat tangalon an questions
-                    if(params.attempt === 'true'){
-                        const today =  new Date();
-                        if(new Date(data.dateTimeStart) < today && new Date(data.dateTimeEnd) > today){
-                            res.status(200).send({message: "Success", data: data})
-                        }else{
-                            data.questions = undefined;
-                            res.status(401).send({message: "Exam is Closed"})
-                        }
-                    }
-                    else{
-                        data.questions = undefined;
-                        res.status(200).send({message: "Success", data: data})
-                    }
-                }
-            })
+            }else{
+                res.status(404).send({message: "Exam not Found"})
+            }
         }
     }
     catch(error) {
@@ -127,7 +108,7 @@ app.put("/exam", verifyToken, async (req, res) => {
     const params = req.body;
     if(req.user.role === "admin" || req.user.role === "superadmin"){
         try {
-            await Exam.findOne({_id:mongoose.Types.ObjectId(params._id)})
+            await Exam.findOne({_id:mongoose.Types.ObjectId(params.exam)})
                 .then(async (exam) => {
 
                     const doChangeDateTimeStart = params.dateTimeStart === undefined ? "": "Modified Date Start, "
@@ -166,11 +147,10 @@ app.put("/exam", verifyToken, async (req, res) => {
         res.status(401).send({message: "Access Denied"})
     }
 })
-
 app.delete("/exam", verifyToken, async (req, res) => {
     const params = req.body;
     if(req.user.role === "admin" || req.user.role === "superadmin"){
-        const exam = await Exam.deleteOne({_id: params._id})
+        const exam = await Exam.deleteOne({_id: params.exam})
         if(exam.deletedCount === 1){
             res.status(200).send({message:"Success", deletedCount: exam.deletedCount});
         }else{
@@ -179,5 +159,39 @@ app.delete("/exam", verifyToken, async (req, res) => {
     }else {
         res.status(401).send({message:"Access Denied"})
     }
+})
+app.post("/exam/attempt", verifyToken, async (req, res) => {
+    const params = req.body;
+    Exam.findOne({_id: params.exam})
+        .populate({
+            path: 'questions',
+            select: 'question choices type'
+        })
+        .populate({
+            path: 'category',
+            select: '_id name'
+        })
+        .select(['dateTimeStart', 'dateTimeEnd', 'duration', 'itemNumber', 'category'])
+        .exec((err, data) => {
+            if(err){
+                res.status(400).send({message: "Error", error: err.message})
+            }
+            else if(data === null){
+                res.status(404).send({message: "Exam not Found"})   
+            }
+            else{
+                //Mag attemp ngae siya igCheck anay an date
+                //Kun dre ngane dapat tangalon an questions
+                const today =  new Date();
+                if(new Date(data.dateTimeStart) < today && new Date(data.dateTimeEnd) > today){
+                    res.status(200).send({message: "Success", data: data})
+                }
+                else{
+                    data.questions = undefined;
+                    res.status(401).send({message: "Exam is Closed"})
+                }
+            }
+        }
+    )
 })
 module.exports = app

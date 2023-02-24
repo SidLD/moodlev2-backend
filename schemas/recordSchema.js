@@ -4,20 +4,36 @@ const mongoose = require('mongoose');
 const recordSchema = mongoose.Schema({
     exam:{
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Exam'
+        ref: 'Exam',
+        required: true,
     },
     student: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
+        ref: 'User',
+        required: true,
     },
     timeStart:{
-        type: Date
+        type: Date,
+        required: true,
     },
     timeEnd:{
-        type: Date
+        type: Date,
     },
+    isComplete: {
+        type: Boolean,
+        default: false
+    },
+    answers: [
+        {
+            question: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'Question'
+            },
+            answer: String
+        }
+    ],
     score:{
-        type: Number
+        type: Number,
     }
 }, {
     timeStampt: true}

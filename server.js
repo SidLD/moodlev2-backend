@@ -15,22 +15,19 @@ app.use(bodyParser.json(), urlencodedParser);
 app.use(cors());
 app.use(express.json());
 
-const Record = require("./schemas/recordSchema");
-const Question = require("./schemas/questionSchema");
-
-//Functions
-const verifyToken = require("./Utilities/VerifyToken");
 
 //API
 const userAPI = require("./api/user");
 const categoryAPI = require("./api/category");
 const examAPI = require("./api/exam");
 const questionAPI = require("./api/question");
+const recordAPI = require("./api/record");
 
 app.use(userAPI);
 app.use(categoryAPI);
 app.use(examAPI);
 app.use(questionAPI);
+app.use(recordAPI);
 
 app.get('*', function(req, res){
     res.status(404).send({message:"URI does not exist"});
