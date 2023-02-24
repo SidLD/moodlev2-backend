@@ -16,18 +16,18 @@ app.get("/category", verifyToken, async (req,res, next) => {
     //Dre dapat makita san student an log
     if(req.user.role === 'admin' || req.user.role === 'superadmin'){
         Category
-        .where(params)
-        .populate({
-            path: 'log.user',
-            select: 'username'
-        })
-        .exec((err, data) => {
-            if (err) {
-                res.status(400).send({message: "Error", err: err.message})
-            }else{
-                res.status(200).send({message: "Success", data: data})
-            }
-        });
+            .where(params)
+            .populate({
+                path: 'log.user',
+                select: 'firstName lastName'
+            })
+            .exec((err, data) => {
+                if (err) {
+                    res.status(400).send({message: "Error", err: err.message})
+                }else{
+                    res.status(200).send({message: "Success", data: data})
+                }
+            });
     }else{
         await Category
             .where(params)
@@ -46,7 +46,7 @@ app.get("/category", verifyToken, async (req,res, next) => {
  */
 app.post("/category", verifyToken, async (req,res, next) => {
     const params = req.body;
-    if(req.user.role === "admin"){
+    if(req.user.role === "admin" || req.user.role === "superadmin"){
         try {
             const newCategory = new Category({
                 name: params.name
@@ -76,7 +76,7 @@ app.post("/category", verifyToken, async (req,res, next) => {
  */
 app.put("/category", verifyToken, async (req,res, next) => {
     const params = req.body;
-    if(req.user.role === "admin"){
+    if(req.user.role === "admin" || req.user.role === "superadmin"){
         try {
             await Category.findById(mongoose.Types.ObjectId(params._id))
             .then(async (room) => {

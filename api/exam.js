@@ -37,7 +37,7 @@ app.post("/exam", verifyToken, async (req, res) => {
             })
             newExam.log.push({
                 user: mongoose.Types.ObjectId(req.user.id),
-                detail: "Created Exam by "+req.user.username
+                detail: "Created Exam"
             })
             await newExam.save(async (err,data) => {
                 if(err)  {
@@ -58,7 +58,7 @@ app.get("/exam", verifyToken, async (req, res) => {
     Exam.where(params)
         .populate({
             path: 'log.user',
-            select: 'username'
+            select: 'firstName lastName'
         })
         .populate({
             path: 'category',
@@ -103,7 +103,6 @@ app.put("/exam", verifyToken, async (req, res) => {
                         res.status(400).send({message: "Invalid Time"})
                     }
                     
-                    console.log(exam.category)
                     exam.log.push({
                         user: mongoose.Types.ObjectId(req.user.id),
                         detail: doChangeDateTimeStart + doChangeDateTimeEnd + doChangeCategory + doChangeDuration + doChangeItemNumber
@@ -129,7 +128,7 @@ app.delete("/exam", verifyToken, async (req, res) => {
     if(req.user.role === "admin" || req.user.role === "superadmin"){
         const exam = await Exam.deleteOne({_id: params._id})
         if(exam.deletedCount === 1){
-            res.status(201).send({message:"Success", deletedCount: exam.deletedCount});
+            res.status(200).send({message:"Success", deletedCount: exam.deletedCount});
         }else{
             res.status(400).send({message:"Invalid Data"});
         }
