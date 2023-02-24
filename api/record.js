@@ -71,19 +71,6 @@ app.put("/record", verifyToken, async (req, res) => {
         res.status(400).send({message: "Record Not Found"})
     }
 })
-// app.post('/record', verifyToken, async (req, res) => {
-//     const params = req.body;
-//     if(req.user.role === "admin" || req.user.role === "superadmin"){
-//         try {
-//             const today = new Date();
-//             res.status(200).send({message: "Success", data: today});
-//         } catch (error) {
-//             return res.status(300).send({message: "Something Went Wrong", error:error.message})
-//         } 
-//     }else{
-//        return res.status(401).send({message: "Access Denied"})
-//     }
-// })
 
 
 

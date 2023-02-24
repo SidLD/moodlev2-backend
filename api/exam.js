@@ -158,12 +158,20 @@ app.put("/exam", verifyToken, async (req, res) => {
 app.delete("/exam", verifyToken, async (req, res) => {
     const params = req.body;
     if(req.user.role === "admin" || req.user.role === "superadmin"){
-        const exam = await Exam.deleteOne({_id: params.exam})
-        if(exam.deletedCount === 1){
-            res.status(200).send({message:"Success", deletedCount: exam.deletedCount});
-        }else{
-            res.status(400).send({message:"Invalid Data"});
-        }
+        await Exam.deleteOne({_id: params.exam})
+            .then(async () => {
+               return await Question.updateMany({exam: params.exam}, {$pull: {exam: params.exam}})                
+            })
+            .then(async (doc) => {
+                if(doc.modifiedCount > 0){
+                    res.status(200).send({message: "Success", deletedCount: doc.modifiedCount})
+                }else{
+                    res.status(400).send({message: "Error", deletedCount: doc.modifiedCount})
+                }
+            })
+            .catch(err => {
+                res.status(400).send({message: "Error", error: err.message}) 
+            })
     }else {
         res.status(401).send({message:"Access Denied"})
     }
