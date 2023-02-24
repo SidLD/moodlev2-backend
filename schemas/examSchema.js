@@ -16,17 +16,20 @@ const examSchema = mongoose.Schema({
         min: 1
     },
     category: {
-        type: mongoose.SchemaTypes.ObjectId,
+        type: mongoose.Schema.Types.ObjectId,
         ref: 'Category'
     }, 
     questions: [{
-            type: mongoose.SchemaTypes.ObjectId,
-            ref: "Question"
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Question'
         }
     ],
     log: [
         {
-            _id: mongoose.SchemaTypes.ObjectId,
+            user:{
+                type: mongoose.Schema.Types.ObjectId,
+                ref:'User'
+            },
             detail: String,
             createdAt: {
                 type: Date,
@@ -39,4 +42,4 @@ const examSchema = mongoose.Schema({
     timeStampt: true}
 )
 
-module.exports = mongoose.model("Exam", examSchema);
+module.exports = mongoose.model("exam", examSchema);

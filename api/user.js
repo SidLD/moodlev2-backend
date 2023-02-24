@@ -15,7 +15,7 @@ app.post("/register", async (req,res, next) => {
     const ifTakenUsername = await User.findOne({username: params.username});
 
     if(ifTakenEmail || ifTakenUsername){
-        return res.status(401).send({message:"User already Exist"})
+         res.status(401).send({message:"User already Exist"})
     }
     const hashedPassword = await bcrypt.hash(params.password, 10);
     const dbUser = new User({
@@ -28,18 +28,18 @@ app.post("/register", async (req,res, next) => {
         })    
     dbUser.save( async (err, room) => {
         if(err) {
-            return res.status(401).send({message:"Error", error:err});
+             res.status(401).send({message:"Error", error:err});
         }
         room.log.push({
                 _id: mongoose.Types.ObjectId(room.id),
-                detail: "Created by"+room.username
+                detail: "Created by "+room.username
         })
         room.save( async (err, data) => {
             if(err) {
-                return res.status(401).send({message:"Error", error:err});
+                 res.status(401).send({message:"Error", error:err});
             }
             data.password = undefined;
-                return res.status(201).send({message:"Success", data:data});
+                 res.status(201).send({message:"Success", data:data});
             }) 
        })
 
@@ -49,7 +49,7 @@ app.post("/login", async (req,res, next) => {
     User.findOne({email: userLoggingIn.email})
         .then(dbUser => {
             if(!dbUser) {
-                return res.status(404).send({message:"Incorrect Email or Password"}) 
+                 res.status(404).send({message:"Incorrect Email or Password"}) 
             }
             bcrypt.compare(userLoggingIn.password, dbUser.password)
             .then(isMatch => {
@@ -66,22 +66,22 @@ app.post("/login", async (req,res, next) => {
                             process.env.JWT_SECRET,
                             {expiresIn: 86400},
                             (err, token) => {
-                                if(err) return res.send({message: err});
-                                return res.status(201).send({
+                                if(err)  res.send({message: err});
+                                 res.status(201).send({
                                     message:"Success",
                                     token: "Bearer "+token
                                 });
                             }
                         )
                     }else{
-                        return res.status(401).send({message:"User not Aprroved"})
+                         res.status(401).send({message:"User not Aprroved"})
                     }
                 }else{
                     res.status(400).send({message:"Invalid Email or Password"})
                 }
             })
             .catch(err => {
-                return res.status(400).send({message:"Invalid Email or Password", error:err})
+                 res.status(400).send({message:"Invalid Email or Password", error:err})
             })
         })
 })
@@ -90,24 +90,17 @@ app.get("/user", verifyToken, async (req,res, next) => {
     if(req.user.role === "admin" || req.user.role === "superadmin"){
         await User.where(userToGet).select(["username", "role", "status", "age", "gender", "email"])
         .then(data => {
-            return res.status(201).send({isLoggingIn: true, data: data})
-        })
-        .catch(err => {
-           return res.status(401).send({message: "Something Went Wrong", err:err})
+             res.status(201).send({message: "Success", data: data})
         })
     }
     else{
         await User.where(userToGet).select(["username", "gender"])
         .then(data => {
-            res.status(201).send({isLoggingIn: true, data: data})
-        })
-        .catch(err => {
-            res.status(404).send({message: "User does not exist", err:err})
+            res.status(201).send({message: "Success", data: data})
         })
            
     }
 })
-
 app.put("/user", verifyToken, async (req,res, next) => {
     const userToBeUpdate = req.body;
     //para ine makita kun nanu an guinBago
@@ -120,7 +113,7 @@ app.put("/user", verifyToken, async (req,res, next) => {
         let user = User.findById(mongoose.Types.ObjectId(userToBeUpdate.userId))
         let havePermission = false;
         if(!user){
-            return res.status(400).send({message: "User not Found"});
+             res.status(400).send({message: "User not Found"});
         }else if(user.role === "student" && (req.user.role === "admin" || req.user.role === "superadmin")){
             havePermission = true;
         }else if(user.role === "admin" && req.user.role === "superadmin"){
@@ -141,13 +134,13 @@ app.put("/user", verifyToken, async (req,res, next) => {
             })
             await user.save(async (err, data) => { 
                 if(err) {
-                    return res.status(400).send({message:"Error", error:err})
+                     res.status(400).send({message:"Error", error:err})
                 }
                 data.password = undefined;
-                return res.status(200).send({message:"Success", data: data})
+                 res.status(200).send({message:"Success", data: data})
             })
         }
-        return res.status(400).send({message: "Access Denied"});
+         res.status(400).send({message: "Access Denied"});
     }else{
         const user = await User.findById(req.user.id);
         user.username = userToBeUpdate.username ? userToBeUpdate.username: user.username
@@ -164,20 +157,19 @@ app.put("/user", verifyToken, async (req,res, next) => {
         })
         await user.save(async (err, data) => { 
             if(err) {
-                return res.status(400).send({message:"Error", error:err})
+                 res.status(400).send({message:"Error", error:err})
             }
             data.password = undefined;
-            return res.status(200).send({message:"Success", data: data})
+             res.status(200).send({message:"Success", data: data})
         })
     }
 })
-
 app.delete("/user", verifyToken, async (req,res,next)=>{
     const userToBeDeletedId = req.body.userId;
     let user = User.findById(mongoose.Types.ObjectId(userToBeUpdate.userId))
     let havePermission = false;
     if(!user){
-        return res.status(400).send({message: "User not Found"});
+         res.status(400).send({message: "User not Found"});
     }else if(user.role === "student" && (req.user.role === "admin" || req.user.role === "superadmin")){
         havePermission = true;
     }else if(user.role === "admin" && req.user.role === "superadmin"){

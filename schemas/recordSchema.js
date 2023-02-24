@@ -2,25 +2,23 @@ const mongoose = require('mongoose');
 
 //student status is pending or approved
 const recordSchema = mongoose.Schema({
-    exam_id:{
-        type: String
+    exam:{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Exam'
     },
-    dateStart:{
+    student: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    },
+    timeStart:{
         type: Date
     },
-    dateEnd:{
+    timeEnd:{
         type: Date
-    },
-    student_id:{
-        type: String
     },
     score:{
         type: Number
-    },
-    itemNumber:{
-        type: Number
     }
-
 }, {
     timeStampt: true}
 )

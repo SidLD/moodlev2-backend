@@ -15,9 +15,6 @@ app.use(bodyParser.json(), urlencodedParser);
 app.use(cors());
 app.use(express.json());
 
-//Schemas
-const User = require("./schemas/userSchema");
-const Exam = require("./schemas/examSchema");
 const Record = require("./schemas/recordSchema");
 const Question = require("./schemas/questionSchema");
 
@@ -34,82 +31,18 @@ app.use(categoryAPI);
 app.use(examAPI);
 
 app.get('*', function(req, res){
-    res.status(401).send({message:"URI does not exist"});
+    res.status(404).send({message:"URI does not exist"});
 });
 app.post('*', function(req, res){
-    res.status(401).send({message:"URI does not exist"});
+    res.status(404).send({message:"URI does not exist"});
 });
 app.put('*', function(req, res){
-    res.status(401).send({message:"URI does not exist"});
+    res.status(404).send({message:"URI does not exist"});
 });
 app.delete('*', function(req, res){
-    res.status(401).send({message:"URI does not exist"});
+    res.status(404).send({message:"URI does not exist"});
 });
 
-
-app.get("/exam", verifyToken, async (req,res, next) => {
-    if(req.user.type === "admin"){
-        const data = await Exam.find({});
-        res.json({message:"Success", data: data})
-    }else{
-        const data = await Exam.find({},{"_id":1, "dateTimeStart":1, "dateTimeEnd":1})
-        res.json({message:"Success", data:data})
-    }
-})
-app.put("/exam", verifyToken, async (req,res, next) => {
-    if(req.user.type === "admin"){
-        const {dateTimeStart, dateTimeEnd, duration, examId} = req.body;
-        // const data = {
-        //     month:date.getMonth(),
-        //     day:date.getDay(),
-        //     year:date.getFullYear(),
-        //     hour:date.getHours(),
-        //     sec:date.getSeconds(),
-        //     min:date.getMinutes(),
-        // }
-        if(new Date(dateTimeStart) < new Date(dateTimeEnd)){
-            res.json({message:"Invalid Date Time"})
-        }
-        try {
-            const hour = duration.split('-')[0];
-            const min = duration.split('-')[1];
-            const date = new Exam({
-                dateTimeStart : new Date(dateTimeStart),
-                dateTimeEnd : new Date(dateTimeEnd),
-                duration : hour+"-"+min,
-                admin_id : req.user.id,
-            })
-            await date.findByIdAndUpdate( examId,(err, docs) =>{
-                if(err) res.json({message:"Invalid Data"});
-                res.json({message:"Success", data: docs});
-
-            })
-        } catch (error) {
-            res.json({message:"Invalid Data"});
-        } 
-    }else{
-        res.json({message:"Operation Denied"});
-    }
-})
-app.delete("/exam", verifyToken, async (req,res, next) => {
-    if(req.user.type === "admin"){
-        await Exam.deleteOne({_id:req.body.examId}).then(
-            async data => {
-                await Question.deleteMany({exam_id:req.body.examId})
-                .then(data =>{
-                    if(data.deletedCount === 0){
-                        res.json({message:"Fail", data:data});
-                    }else{
-                        res.json({message:"Success", data:data});
-                    }
-                })
-            }
-        )
-        .catch(err => res.json({message:"Fail", err:err}));
-    }else{
-        res.json({message:"Access Denied"})
-    }
-})
 
 //Records
 app.post("/record", verifyToken, async (req, res, next) => {

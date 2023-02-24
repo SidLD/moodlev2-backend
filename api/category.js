@@ -4,7 +4,8 @@ const mongoose = require('mongoose');
 const app = express();
 
 const Category = require("../schemas/categorySchema")
-const verifyToken = require("../Utilities/VerifyToken")
+const verifyToken = require("../Utilities/VerifyToken");
+const e = require('express');
 
 /**
  * An params id didi is '_id'.
@@ -12,33 +13,30 @@ const verifyToken = require("../Utilities/VerifyToken")
 
 app.get("/category", verifyToken, async (req,res, next) => {
     const params = req.query;
-    //Pag may name ngane sa params ig search nala an name with 'like';
-    //pag wara then pasa an params
     //Dre dapat makita san student an log
-    if(params.name !== undefined){
-        await Category.where({"name":{ $regex: '.*' + params.name+ '.*'}})
-        .then(data => {
-            if(req.user.role === "admin"){
-                return res.status(200).send({message: "Success", data: data})
+    if(req.user.role === 'admin' || req.user.role === 'superadmin'){
+        Category
+        .where(params)
+        .populate({
+            path: 'log.user',
+            select: 'username'
+        })
+        .exec((err, data) => {
+            if (err) {
+                res.status(400).send({message: "Error", err: err.message})
             }else{
+                res.status(200).send({message: "Success", data: data})
+            }
+        });
+    }else{
+        await Category
+            .where(params)
+            .then(data => {
                 data.forEach(element => {
                     element.log = undefined   
                 });
-                return res.status(200).send({message: "Success", data: data})
-            }
-        })
-    }else{
-        await Category.where(params)
-            .then(data => {
-                if(req.user.role === "admin"){
-                    return res.status(200).send({message: "Success", data: data})
-                }else{
-                    data.forEach(element => {
-                        element.log = undefined   
-                    });
-                    return res.status(200).send({message: "Success", data: data})
-                }
-        })
+                res.status(200).send({message: "Success", data: data})
+            })
     }
 })
 /***
@@ -49,26 +47,26 @@ app.get("/category", verifyToken, async (req,res, next) => {
 app.post("/category", verifyToken, async (req,res, next) => {
     const params = req.body;
     if(req.user.role === "admin"){
-        const newCategory = new Category({
-            name: params.name
-        })
-        await newCategory.save( async (err, room)=>{
-            if(err) {
-                return res.status(400).send({message:"Error", err:err})
-            }
-            room.log.push({
-                _id: mongoose.Types.ObjectId(req.user.id),
+        try {
+            const newCategory = new Category({
+                name: params.name
+            })
+            newCategory.log.push({
+                user:  mongoose.Types.ObjectId(req.user.id),
                 detail: "Created "+params.name
             })
-            await room.save(async (err, data) => { 
-                if(err) {
-                    return res.status(400).send({message:"Error", error:err})
+            await newCategory.save( async (err, data)=>{
+                if(err){
+                    res.status(400).send({message:"Error", error:err})
+                }else{
+                    res.status(200).send({message:"Success", data: data})
                 }
-                return res.status(200).send({message:"Success", data: data})
             })
-        })
+        } catch (error) {
+            res.status(403).send({message:"Success", error: error})
+        }
     }else{
-       return res.status(400).send({message:"Access Denied"})
+        res.status(400).send({message:"Access Denied"})
     }
 })
 /***
@@ -77,51 +75,51 @@ app.post("/category", verifyToken, async (req,res, next) => {
  * CategoryId
  */
 app.put("/category", verifyToken, async (req,res, next) => {
-    const category = req.body;
+    const params = req.body;
     if(req.user.role === "admin"){
-        await Category.findById(mongoose.Types.ObjectId(category._id))
+        try {
+            await Category.findById(mongoose.Types.ObjectId(params._id))
             .then(async (room) => {
-                if(!room) {
-                    return res.status(400).send({message:"Categry Does not exist"})
+                if(room === null) {
+                    res.status(400).send({message:"Category Does not exist"})
                 }
-                room.name = category.name;
-                await room.save(async (err, data) => {
-                    if(err) {
-                        return res.status(400).send({message:"Error", error:err})
-                    }
+                else {
+                    room.name = params.name;
                     room.log.push({
-                        _id: mongoose.Types.ObjectId(req.user.id),
-                        detail: "Modified to "+category.name
+                        user: mongoose.Types.ObjectId(req.user.id),
+                        detail: "Modified to "+params.name
                     })
-                    await room.save(async (err, data) => { 
+                    await room.save(async (err, data) => {
                         if(err) {
-                            return res.status(400).send({message:"Error", error:err})
+                            res.status(400).send({message:"Error", error:err})
+                        }else {
+                            res.status(200).send({message:"Success", data: data})
                         }
-                        return res.status(200).send({message:"Success", data: data})
                     })
-                })
-                
+                }
             })
+        } catch (error) {
+            res.status(400).send({message:"Error", error:error})
+        }
+    }else{
+        res.status(400).send({message: "Access Denied"})
     }
-    return res.status(400).send({message: "Access Denied"})
 })
-
 app.delete("/category", verifyToken, async (req,res, next) => {
     const category = req.body;
-    if(req.user.type === "admin"){
+    if(req.user.role === "admin" || req.user.role === "superadmin"){
        await Category.deleteOne({_id:category._id})
         .then(data => {
             if(data.deletedCount === 1){
-                return res.status(200).send({message:"Success", deletedCount:data.deletedCount});
+                 res.status(200).send({message:"Success", deletedCount:data.deletedCount});
             }else{
-               return res.status(401).send({message:"Fail", deletedCount:data.deletedCount});   
+                res.status(400).send({message:"Fail", deletedCount:data.deletedCount});   
             }
         })
        
     }else{
-        return res.status(400).send({message: "Access Denied"})
+         res.status(400).send({message: "Access Denied"})
     }
 })
-
 
 module.exports = app

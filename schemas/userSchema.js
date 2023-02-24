@@ -46,18 +46,21 @@ const userSchema = mongoose.Schema(
         enum: ["pending", "approved"],
     },log: [
       {
-          _id: mongoose.SchemaTypes.ObjectId,
-          detail: String,
-          createdAt: {
-              type: Date,
-              default: Date.now()
-          }
+        user:{
+          type: mongoose.Schema.Types.ObjectId,
+          ref:'User'
+        },
+        detail: String,
+        createdAt: {
+            type: Date,
+            default: Date.now()
+        }
       }
-  ]
+    ]
   },
   {
     timestamps: true,
   }
 );
 
-module.exports = mongoose.model("user", userSchema);
+module.exports = mongoose.model("User", userSchema);

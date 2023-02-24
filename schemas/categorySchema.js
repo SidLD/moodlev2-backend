@@ -1,12 +1,15 @@
 const mongoose = require('mongoose');
-const category = mongoose.Schema({
+const categorySchema = mongoose.Schema({
     name: {
         type: String,
         required: true
     },
     log: [
         {
-            _id: mongoose.SchemaTypes.ObjectId,
+            user:{
+                type: mongoose.Schema.Types.ObjectId,
+                ref:'User'
+            },
             detail: String,
             createdAt: {
                 type: Date,
@@ -17,4 +20,4 @@ const category = mongoose.Schema({
 }, 
 )
 
-module.exports = mongoose.model("category", category);
+module.exports = mongoose.model("Category", categorySchema);
