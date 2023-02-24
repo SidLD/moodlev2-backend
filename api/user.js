@@ -8,41 +8,59 @@ const app = express();
 const User = require("../schemas/userSchema");
 const verifyToken = require("../Utilities/VerifyToken")
 
+/**
+    role: String <enum  ["student", "admin", "superadmin"]>
+    firstName: String,
+    lastName: String,
+    middleName: String (Optional)
+    gender: boolean,
+    password: String,
+    email: String
+    age: Number,
+    log: [{
+            user: id,
+            detail: String,
+    }]
+ */
 app.post("/register", async (req,res, next) => {
-    //username, password, gender, email required
     const params = req.body;
     const ifTakenEmail = await User.findOne({email: params.email});
-    const ifTakenUsername = await User.findOne({username: params.username});
-
+    const ifTakenUsername = await User.findOne({firstName: params.firstName, lastName: params.lastName, middleName: params.middleName});
     if(ifTakenEmail || ifTakenUsername){
-         res.status(401).send({message:"User already Exist"})
+        res.status(401).send({message:"User already Exist"})
     }
-    const hashedPassword = await bcrypt.hash(params.password, 10);
-    const dbUser = new User({
-        username: params.username,
-        email: params.email,
-        password: hashedPassword,
-        gender: params.gender,
-        role: params.role,
-        status: "pending"
+    else{          
+        const hashedPassword = await bcrypt.hash(params.password, 10);
+        const dbUser = new User({
+            firstName: params.firstName,
+            lastName: params.lastName,
+            middleName: params.middleName !== undefined ? params.middleName : "",
+            email: params.email,
+            password: hashedPassword,
+            gender: params.gender,
+            role: params.role,
+            age: params.age,
+            status: "pending"
         })    
-    dbUser.save( async (err, room) => {
-        if(err) {
-             res.status(401).send({message:"Error", error:err});
-        }
-        room.log.push({
-                _id: mongoose.Types.ObjectId(room.id),
-                detail: "Created by "+room.username
-        })
-        room.save( async (err, data) => {
+        dbUser.save( async (err, room) => {
             if(err) {
-                 res.status(401).send({message:"Error", error:err});
+                res.status(401).send({message:"Error", error:err.message});
             }
-            data.password = undefined;
-                 res.status(201).send({message:"Success", data:data});
+            room.log.push({
+                    user: mongoose.Types.ObjectId(room.id),
+                    detail: "Created by "+room.firstName+ ", "+room.lastName
+            })
+            room.save( async (err, data) => {
+                if(err) {
+                    res.status(401).send({message:"Error", error:err.message});
+                }else{
+                    
+                data.password = undefined;
+                res.status(201).send({message:"Success", data:data});
+                }
             }) 
-       })
-
+        })
+    }
 })
 app.post("/login", async (req,res, next) => {
     const userLoggingIn = req.body;
@@ -50,7 +68,7 @@ app.post("/login", async (req,res, next) => {
         .then(dbUser => {
             if(!dbUser) {
                  res.status(404).send({message:"Incorrect Email or Password"}) 
-            }
+            }else {
             bcrypt.compare(userLoggingIn.password, dbUser.password)
             .then(isMatch => {
                 console.log(isMatch)
@@ -83,18 +101,31 @@ app.post("/login", async (req,res, next) => {
             .catch(err => {
                  res.status(400).send({message:"Invalid Email or Password", error:err})
             })
-        })
+        }
+    })
 })
 app.get("/user", verifyToken, async (req,res, next) => {
     const userToGet = req.query;
     if(req.user.role === "admin" || req.user.role === "superadmin"){
-        await User.where(userToGet).select(["username", "role", "status", "age", "gender", "email"])
-        .then(data => {
-             res.status(201).send({message: "Success", data: data})
-        })
+        User.find(userToGet)
+            .populate({
+                path: 'log.user',
+                select: 'firstname lastName'
+            })
+            .exec(async (err, data) => {
+                if(err) {
+                    res.status(400).send({message: "Error", error: err.message})
+                }
+                else{
+                    data.forEach(element => {
+                        element.password = undefined;   
+                    });
+                    res.status(200).send({message: "Success", data: data})
+                }
+            })
     }
     else{
-        await User.where(userToGet).select(["username", "gender"])
+        await User.where(userToGet).select(["firtName","lastName"])
         .then(data => {
             res.status(201).send({message: "Success", data: data})
         })
@@ -106,11 +137,16 @@ app.put("/user", verifyToken, async (req,res, next) => {
     //para ine makita kun nanu an guinBago
     const doChangeEmail = userToBeUpdate.email === undefined ? "": "Update Email, ";
     const doChageGender = userToBeUpdate.gender === undefined ? "": "Update Gender, ";
+    const doChageAge = userToBeUpdate.age === undefined ? "": "Update Age, ";
     const doChangeRole = userToBeUpdate.role === undefined ? "": "Update Role, ";
-    const doChangeUsername = userToBeUpdate.username === undefined ? "": "Update Username";
+    const doChangeFirstName = userToBeUpdate.firstName === undefined ? "": "Update First Name, ";
+    const doChangeLastName = userToBeUpdate.lastName === undefined ? "": "Update Last Name, ";
+    const doChangeMiddleName = userToBeUpdate.middleName === undefined ? "": "Update Middle Name, ";
+    const doChangePassword = userToBeUpdate.password === undefined ? "": "Update Password, ";
+    const doChangeStatus = userToBeUpdate.status === undefined ? "": "Update Status, ";
     //Kun an nagUUpdate ngane iba na tawo dapat undefined ine, otherwise an iya la sarili an pwede maUpdate
-    if(userToBeUpdate.userId !== undefined){
-        let user = User.findById(mongoose.Types.ObjectId(userToBeUpdate.userId))
+    if(userToBeUpdate._id !== undefined){
+        let user = await User.findById(mongoose.Types.ObjectId(userToBeUpdate._id))
         let havePermission = false;
         if(!user){
              res.status(400).send({message: "User not Found"});
@@ -120,53 +156,67 @@ app.put("/user", verifyToken, async (req,res, next) => {
             havePermission = true;
         }
         if(havePermission){
-            user.username = userToBeUpdate.username ? userToBeUpdate.username: user.username
+            user.firstName = userToBeUpdate.firstName ? userToBeUpdate.firstName: user.firstName
+            user.lastName = userToBeUpdate.lastName ? userToBeUpdate.lastName: user.lastName
+            user.middleName = userToBeUpdate.middleName ? userToBeUpdate.middleName: user.middleName
             user.gender = userToBeUpdate.gender ? userToBeUpdate.gender: user.gender
             user.age = userToBeUpdate.age ? userToBeUpdate.age: user.age
             user.email = userToBeUpdate.email ? userToBeUpdate.email: user.email
-            if(userToBeUpdate.password !== undefined){
-                const hashedPassword = await bcrypt.hash(user.password, 10);
+            user.role = userToBeUpdate.role ? userToBeUpdate.role: user.role
+            user.status = userToBeUpdate.status ? userToBeUpdate.status: user.status
+            
+            if(!(doChangePassword === "")){
+                const hashedPassword = await bcrypt.hash(userToBeUpdate.password, 10);
                 user.password = hashedPassword
             }
             user.log.push({
-                _id: mongoose.Types.ObjectId(req.user.id),
-                detail: doChangeEmail + doChangeRole + doChangeUsername + doChageGender
+                user: mongoose.Types.ObjectId(req.user.id),
+                detail:doChangePassword + doChangeEmail + doChangeStatus + doChageAge + doChangeRole + doChangeFirstName + doChangeLastName + doChangeMiddleName + doChangeRole + doChageGender
             })
             await user.save(async (err, data) => { 
                 if(err) {
-                     res.status(400).send({message:"Error", error:err})
+                     res.status(400).send({message:"Error", error:err.message})
                 }
-                data.password = undefined;
-                 res.status(200).send({message:"Success", data: data})
+                else{
+                    data.password = undefined;
+                    res.status(200).send({message:"Success", data: data})
+                }
             })
         }
-         res.status(400).send({message: "Access Denied"});
+        else{
+            res.status(400).send({message: "Access Denied"});
+        }
     }else{
         const user = await User.findById(req.user.id);
-        user.username = userToBeUpdate.username ? userToBeUpdate.username: user.username
+        user.firstName = userToBeUpdate.firstName ? userToBeUpdate.firstName: user.firstName
+        user.lastName = userToBeUpdate.lastName ? userToBeUpdate.lastName: user.lastName
+        user.middleName = userToBeUpdate.middleName ? userToBeUpdate.middleName: user.middleName
         user.gender = userToBeUpdate.gender ? userToBeUpdate.gender: user.gender
         user.age = userToBeUpdate.age ? userToBeUpdate.age: user.age
         user.email = userToBeUpdate.email ? userToBeUpdate.email: user.email
-        if(userToBeUpdate.password !== undefined){
+        user.role = userToBeUpdate.role ? userToBeUpdate.role: user.role
+        if(doChangePassword){
             const hashedPassword = await bcrypt.hash(user.password, 10);
             user.password = hashedPassword
         }
         user.log.push({
-            _id: mongoose.Types.ObjectId(req.user.id),
-            detail: doChangeEmail + doChangeRole + doChangeUsername + doChageGender
+            user: mongoose.Types.ObjectId(req.user.id),
+            detail: doChangeEmail + doChangeRole + doChageAge + doChangeFirstName + doChangeLastName + doChageGender
         })
         await user.save(async (err, data) => { 
             if(err) {
-                 res.status(400).send({message:"Error", error:err})
+                 res.status(400).send({message:"Error", error:err.message})
             }
-            data.password = undefined;
-             res.status(200).send({message:"Success", data: data})
+            else{
+                data.password = undefined;
+                res.status(200).send({message:"Success", data: data})
+            }
         })
     }
 })
 app.delete("/user", verifyToken, async (req,res,next)=>{
-    const userToBeDeletedId = req.body.userId;
-    let user = User.findById(mongoose.Types.ObjectId(userToBeUpdate.userId))
+    const params = req.body;
+    let user = await User.findById(mongoose.Types.ObjectId(params._id))
     let havePermission = false;
     if(!user){
          res.status(400).send({message: "User not Found"});
@@ -176,11 +226,11 @@ app.delete("/user", verifyToken, async (req,res,next)=>{
         havePermission = true;
     }
     if(havePermission){
-        const user = await User.deleteOne({_id: userToBeDeletedId})
-        if(user.deletedCount === 1){
-            res.status(201).json({message:"Success", user:user});
+        const result = await User.deleteOne({_id: mongoose.Types.ObjectId(params._id)})
+        if(result.deletedCount === 1){
+            res.status(200).send({message:"Success", user:result.deletedCount});
         }else{
-            res.status(500).json({message:"Something Went Wrong"});
+            res.status(400).send({message:"Something Went Wrong"});
         }
     }else{
         res.status(401).json({message:"Access Denied"})

@@ -7,11 +7,18 @@ const verifyToken = require("../Utilities/VerifyToken")
 const Exam = require("../schemas/examSchema");
 
 /**
- * dateTimeStart
- * dateTimeEnd
- * category
- * duration
- * itemNumber
+ *     ****** Structure *****
+    
+    dateTimeStart : Date
+    dateTimeEnd : Date
+    category : id
+    duration : number
+    itemNumber : number
+    log: [{
+            user: id,
+            detail: String,
+            createdAt: Date
+    }]
  */
 app.post("/exam", verifyToken, async (req, res) => {
     const params = req.body;
@@ -33,14 +40,17 @@ app.post("/exam", verifyToken, async (req, res) => {
                 detail: "Created Exam by "+req.user.username
             })
             await newExam.save(async (err,data) => {
-                if(err)  return res.status(401).send({message:"Error", error:err})
-                return res.status(200).send({message:"Success", data: data})
+                if(err)  {
+                    res.status(401).send({message:"Error", error:err.message})
+                }{
+                    res.status(200).send({message:"Success", data: data})
+                }
             })
         } catch (error) {
-            return res.status(300).send({message: "Something Went Wrong", error:error})
+            res.status(300).send({message: "Something Went Wrong", error:error.message})
         } 
     }else{
-       return res.status(401).send({message: "Access Denied"})
+        res.status(401).send({message: "Access Denied"})
     }
 })
 app.get("/exam", verifyToken, async (req, res) => {
@@ -100,7 +110,7 @@ app.put("/exam", verifyToken, async (req, res) => {
                     })
                     await exam.save(async (err,data) => {
                         if(err) { 
-                            res.status(400).send({message:"Error", error:err})
+                            res.status(400).send({message:"Error", error:err.message})
                         }else{
                             res.status(200).send({message:"Success", data: data})
                         }

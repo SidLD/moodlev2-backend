@@ -16,7 +16,20 @@ const questionSchema = mongoose.Schema({
     answer:{
         type: String
     },
-    choices: [String]
+    choices: [String],
+    log: [
+        {
+            user:{
+                type: mongoose.Schema.Types.ObjectId,
+                ref:'User'
+            },
+            detail: String,
+            createdAt: {
+                type: Date,
+                default: Date.now()
+            }
+        }
+    ]
 }, {
     timeStampt: true}
 )
