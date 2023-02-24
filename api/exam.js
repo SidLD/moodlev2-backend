@@ -88,12 +88,17 @@ app.get("/exam", verifyToken, async (req, res) => {
             })
             let exam = await Exam.findOne({_id:mongoose.Types.ObjectId(params.exam)})
                 .select(['dateTimeStart', 'dateTimeEnd', 'duration', 'itemNumber', 'category']);
+            
+            let isContinue = false;
+            if(record){
+                isContinue = record.isContinue;
+            }
             if(exam !== null){
                 const today = new Date();
                 if(new Date(exam.dateTimeStart) < today && new Date(exam.dateTimeEnd) > today){
-                    res.status(200).send({message: " Success", record: record, exam: exam});
+                    res.status(200).send({message: " Success", isContinue: isContinue, exam: exam});
                 }else{
-                    res.status(401).send({message: "Exam is Closed", record: record, exam: exam});
+                    res.status(401).send({message: "Exam is Closed", isContinue: isContinue, exam: exam});
                 }
             }else{
                 res.status(404).send({message: "Exam not Found"})
@@ -172,7 +177,7 @@ app.post("/exam/attempt", verifyToken, async (req, res) => {
             select: '_id name'
         })
         .select(['dateTimeStart', 'dateTimeEnd', 'duration', 'itemNumber', 'category'])
-        .exec((err, data) => {
+        .exec(async (err, data) => {
             if(err){
                 res.status(400).send({message: "Error", error: err.message})
             }
@@ -181,10 +186,24 @@ app.post("/exam/attempt", verifyToken, async (req, res) => {
             }
             else{
                 //Mag attemp ngae siya igCheck anay an date
-                //Kun dre ngane dapat tangalon an questions
+                //Kun mayda record an user pati exam, dapat igContinue la iton
+
                 const today =  new Date();
                 if(new Date(data.dateTimeStart) < today && new Date(data.dateTimeEnd) > today){
-                    res.status(200).send({message: "Success", data: data})
+                    let record = await Record.findOne({
+                        exam:mongoose.Types.ObjectId(params.exam), 
+                        student:mongoose.Types.ObjectId(req.user.id)
+                    })
+                    if(record === null){
+                        record = new Record({
+                            exam:mongoose.Types.ObjectId(params.exam), 
+                            student:mongoose.Types.ObjectId(req.user.id),
+                            timeStart: today
+                        })
+                        await record.save();
+                    }
+                    res.status(200).send({message: "Success", exam: data, record: record})
+                   
                 }
                 else{
                     data.questions = undefined;
