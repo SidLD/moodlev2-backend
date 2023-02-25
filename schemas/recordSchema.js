@@ -36,7 +36,7 @@ const recordSchema = mongoose.Schema({
         type: Number,
     }
 }, {
-    timeStampt: true}
+    timestamps: true}
 )
 
 module.exports = mongoose.model("Record", recordSchema);
