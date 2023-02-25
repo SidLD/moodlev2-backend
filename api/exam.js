@@ -6,6 +6,7 @@ const app = express();
 const verifyToken = require("../Utilities/VerifyToken")
 const Exam = require("../schemas/examSchema");
 const Record = require("../schemas/recordSchema");
+const Question = require("../schemas/questionSchema");
 
 /**
  *     ****** Structure *****
@@ -58,7 +59,7 @@ app.get("/exam", verifyToken, async (req, res) => {
     const params = req.query;
     try {
         if(req.user.role === "admin" || req.user.role === "superadmin"){
-            Exam.findOne(params)
+            Exam.where(params)
                 .populate({
                     path: 'log.user',
                     select: 'firstName lastName',
@@ -160,7 +161,7 @@ app.delete("/exam", verifyToken, async (req, res) => {
     if(req.user.role === "admin" || req.user.role === "superadmin"){
         await Exam.deleteOne({_id: params.exam})
             .then(async () => {
-               return await Question.updateMany({exam: params.exam}, {$pull: {exam: params.exam}})                
+               return await Question.deleteMany({exam: params.exam})                
             })
             .then(async (doc) => {
                 if(doc.modifiedCount > 0){
@@ -224,7 +225,6 @@ app.post("/exam/attempt", verifyToken, async (req, res) => {
         }
     )
 })
-
 app.post("/exam/submit", verifyToken, async (req, res) => {
     const params = req.body;
     Record.findById(mongoose.Types.ObjectId(params.record))

@@ -112,7 +112,7 @@ app.post("/login", async (req,res, next) => {
 app.get("/user", verifyToken, async (req,res, next) => {
     const userToGet = req.query;
     if(req.user.role === "admin" || req.user.role === "superadmin"){
-        User.find(userToGet)
+        User.where(userToGet)
             .populate({
                 path: 'log.user',
                 select: 'firstname lastName'

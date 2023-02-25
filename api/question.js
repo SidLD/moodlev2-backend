@@ -22,7 +22,7 @@ const Exam = require("../schemas/examSchema");
  */
 app.get("/question", verifyToken, async (req, res) => {
     const params = req.query;
-    Question.find(params)
+    Question.where(params)
         .populate({
             path: 'exam',
             select: '_id dateTimeStart dateTimeEnd duration itemNumber category',

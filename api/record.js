@@ -53,7 +53,6 @@ app.get("/record", verifyToken, async (req, res) => {
             }
         } )
 })
-
 app.put("/record", verifyToken, async (req, res) => {
     const params = req.body;
     let record = await Record.findOne({
@@ -71,7 +70,5 @@ app.put("/record", verifyToken, async (req, res) => {
         res.status(400).send({message: "Record Not Found"})
     }
 })
-
-
 
 module.exports = app

@@ -22,12 +22,14 @@ const categoryAPI = require("./api/category");
 const examAPI = require("./api/exam");
 const questionAPI = require("./api/question");
 const recordAPI = require("./api/record");
+const analysisAPI = require("./Utilities/Algorithm")
 
 app.use(userAPI);
 app.use(categoryAPI);
 app.use(examAPI);
 app.use(questionAPI);
 app.use(recordAPI);
+app.use(analysisAPI);
 
 app.get('*', function(req, res){
     res.status(404).send({message:"URI does not exist"});

@@ -5,7 +5,6 @@ const app = express();
 
 const Category = require("../schemas/categorySchema")
 const verifyToken = require("../Utilities/VerifyToken");
-const e = require('express');
 
 /**
  * An params id didi is '_id'.
