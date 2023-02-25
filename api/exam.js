@@ -7,6 +7,7 @@ const verifyToken = require("../Utilities/VerifyToken")
 const Exam = require("../schemas/examSchema");
 const Record = require("../schemas/recordSchema");
 const Question = require("../schemas/questionSchema");
+const e = require('express');
 
 /**
  *     ****** Structure *****
@@ -85,7 +86,8 @@ app.get("/exam", verifyToken, async (req, res) => {
         }else{
             let record = await Record.findOne({
                 exam:mongoose.Types.ObjectId(params.exam), 
-                student:mongoose.Types.ObjectId(req.user.id)
+                student:mongoose.Types.ObjectId(req.user.id),
+                isComplete: false
             })
             let exam = await Exam.findOne({_id:mongoose.Types.ObjectId(params.exam)})
                 .populate({
@@ -99,8 +101,18 @@ app.get("/exam", verifyToken, async (req, res) => {
             }
             if(exam !== null){
                 const today = new Date();
-                if(new Date(exam.dateTimeStart) < today && new Date(exam.dateTimeEnd) > today){
-                    res.status(200).send({message: " Success", isContinue: isContinue, exam: exam});
+                const examStartDate = new Date(exam.dateTimeStart);
+                const examEndDate = new Date(exam.dateTimeEnd)
+                if( examStartDate < today && examEndDate > today){
+                    if(record){
+                        if((today - examEndDate) < duration){
+                            res.status(401).send({message: "Exam is Closed", isContinue: false, exam: exam});
+                        }else{
+                            res.status(200).send({message: " Success", isContinue: isContinue, exam: exam});
+                        }
+                    }else{
+                        res.status(200).send({message: " Success", isContinue: isContinue, exam: exam});
+                    }
                 }else{
                     res.status(401).send({message: "Exam is Closed", isContinue: isContinue, exam: exam});
                 }
@@ -202,7 +214,7 @@ app.post("/exam/attempt", verifyToken, async (req, res) => {
 
                 const today =  new Date();
                 if(new Date(data.dateTimeStart) < today && new Date(data.dateTimeEnd) > today){
-                    let record = await Record.findOne({
+                    let record = await Record.findOne({ 
                         exam:mongoose.Types.ObjectId(params.exam), 
                         student:mongoose.Types.ObjectId(req.user.id)
                     })
