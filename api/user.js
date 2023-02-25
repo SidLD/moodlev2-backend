@@ -68,7 +68,7 @@ app.post("/login", async (req,res, next) => {
     User.findOne({email: userLoggingIn.email})
         .then(dbUser => {
             if(!dbUser) {
-                 res.status(404).send({message:"Incorrect Email or Password"}) 
+                 res.status(401).send({message:"Incorrect Email or Password"}) 
             }else {
             bcrypt.compare(userLoggingIn.password, dbUser.password)
             .then(isMatch => {
@@ -100,11 +100,11 @@ app.post("/login", async (req,res, next) => {
                          res.status(401).send({message:"User not Aprroved"})
                     }
                 }else{
-                    res.status(400).send({message:"Invalid Email or Password"})
+                    res.status(401).send({message:"Invalid Email or Password"})
                 }
             })
             .catch(err => {
-                 res.status(400).send({message:"Invalid Email or Password", error:err})
+                 res.status(401).send({message:"Invalid Email or Password", error:err})
             })
         }
     })
