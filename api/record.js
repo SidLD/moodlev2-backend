@@ -53,6 +53,8 @@ app.get("/record", verifyToken, async (req, res) => {
             }
         } )
 })
+
+//Pag add la ine san question/answers
 app.put("/record", verifyToken, async (req, res) => {
     const params = req.body;
     let record = await Record.findOne({
@@ -71,4 +73,18 @@ app.put("/record", verifyToken, async (req, res) => {
     }
 })
 
+
+app.delete("/record", verifyToken, async (req, res) => {
+    const params = req.body;
+    let record = await Record.findOne({
+        exam:mongoose.Types.ObjectId(params.exam), 
+        student:mongoose.Types.ObjectId(req.user.id)
+    })
+    if(record){
+        await record.deleteOne({_id: mongoose.Types.ObjectId(record._id)});
+        res.status(201).send({message: "Success", record: record})
+    }else{
+        res.status(400).send({message: "Record Not Found"})
+    }  
+})
 module.exports = app
