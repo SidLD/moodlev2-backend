@@ -1,14 +1,25 @@
 const mongoose = require("mongoose");
 
+const logSchema = mongoose.Schema(
+  {
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+    detail: String,
+  },
+  { timestamps: true }
+);
+
 const userSchema = mongoose.Schema(
   {
     firstName: {
       type: String,
       required: true,
     },
-    lastName:{
+    lastName: {
       type: String,
-      require: true
+      require: true,
     },
     middleName: String,
     password: {
@@ -19,22 +30,22 @@ const userSchema = mongoose.Schema(
       type: String,
       required: true,
       lowercase: true,
-      min:10,
+      min: 10,
       validate: {
-        validator: function(v) {
-            return /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(v);
+        validator: function (v) {
+          return /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(v);
         },
-        message: "Please enter a valid email"
+        message: "Please enter a valid email",
       },
-      required: [true, "Email required"]
+      required: [true, "Email required"],
     },
     gender: {
-      type: Boolean
+      type: Boolean,
     },
-    age:{
+    age: {
       type: Number,
-      min:1,
-      max:100,
+      min: 1,
+      max: 100,
     },
     role: {
       type: String,
@@ -43,25 +54,14 @@ const userSchema = mongoose.Schema(
       index: true,
       enum: ["admin", "student", "superadmin"],
     },
-    status:{
-        type: String,
-        default: 'pending',
-        trim: true,
-        required: true,
-        enum: ["pending", "approved"],
-    },log: [
-      {
-        user:{
-          type: mongoose.Schema.Types.ObjectId,
-          ref:'User'
-        },
-        detail: String,
-        createdAt: {
-            type: Date,
-            default: Date.now()
-        }
-      }
-    ]
+    status: {
+      type: String,
+      default: "pending",
+      trim: true,
+      required: true,
+      enum: ["pending", "approved"],
+    },
+    log: [logSchema],
   },
   {
     timestamps: true,
