@@ -51,34 +51,42 @@ app.post("/question", verifyToken, async (req, res) => {
     const params = req.body;
     if(req.user.role === "admin" || req.user.role === "superadmin"){
         try {
-            const {exam, question, answer, choices, type} = params;
-            const newQuestion = new Question({
-                choices : choices,
-                type : type,
-                answer: answer,
-                question: question,
-                exam : mongoose.Types.ObjectId(exam)
-            })
-            newQuestion.log.push({
-                user: mongoose.Types.ObjectId(req.user.id),
-                detail: "Created Question by "+req.user.firstName + " "+req.user.lastName
-            })
-            await newQuestion.save(async (err,room) => {
-                if(err)  {
+            const {exam, questions} = params;
+            let questionsParam = [];
+            questions.forEach(question => {
+                questionsParam.push(
+                    {
+                        choices : question.choices,
+                        type : question.type,
+                        answer: question.answer,
+                        question: question.question,
+                        exam : mongoose.Types.ObjectId(exam),
+                        log : {
+                            user: mongoose.Types.ObjectId(req.user.id),
+                            detail: "Created Question by "+req.user.firstName + " "+req.user.lastName
+                        }
+                        
+                    }
+                )
+            });
+
+            const data  = await Question.create(questionsParam)
+                if(!data)  {
                     res.status(400).send({message:"Error", error:err.message})
                 }
                 else {
-                    let exam = await Exam.findById(mongoose.Types.ObjectId(room.exam))
-                    exam.questions.push(mongoose.Types.ObjectId(room._id));
-                    await exam.save(async (err, data) => {
+                    let examData = await Exam.findById(mongoose.Types.ObjectId(exam))
+                    data.forEach(temp => {
+                        examData.questions.push(mongoose.Types.ObjectId(temp._id));
+                    })
+                    await examData.save(async (err, room) => {
                         if(err)  {
                             res.status(400).send({message:"Error", error:err.message})
                         }{
-                            res.status(200).send({message:"Success", data: room})
+                            res.status(200).send({message:"Success", data: data})
                         }
                     })
                 }
-            })
         } catch (error) {
             return res.status(300).send({message: "Something Went Wrong", error:error.message})
         } 
