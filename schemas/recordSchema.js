@@ -29,7 +29,8 @@ const recordSchema = mongoose.Schema({
                 type: mongoose.Schema.Types.ObjectId,
                 ref: 'Question'
             },
-            answer: String
+            answer: String,
+            isCorrect: Boolean
         }
     ],
     score:{

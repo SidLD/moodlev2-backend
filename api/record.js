@@ -62,10 +62,19 @@ app.put("/record", verifyToken, async (req, res) => {
         student:mongoose.Types.ObjectId(req.user.id)
     })
     if(record){
-        record.answers.push({
-            question: mongoose.Types.ObjectId(params.question),
-            answer: params.answer
+        let ifExist = false;
+        record.answers.forEach(temp => {
+            if(temp.question === params.question){
+                temp.answer = params.answer
+                ifExist = true;
+            }
         })
+        if(ifExist){
+            record.answers.push({
+                question: mongoose.Types.ObjectId(params.question),
+                answer: params.answer
+            })
+        }
         await record.save()
         res.status(201).send({message: "Success", record: record})
     }else{

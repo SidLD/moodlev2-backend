@@ -212,6 +212,7 @@ app.post("/exam/attempt", verifyToken, async (req, res) => {
                 //Mag attemp ngae siya igCheck anay an date
                 //Kun mayda record an user pati exam, dapat igContinue la iton
 
+                let isContinue = true;
                 const today =  new Date();
                 if(new Date(data.dateTimeStart) < today && new Date(data.dateTimeEnd) > today){
                     let record = await Record.findOne({ 
@@ -224,9 +225,10 @@ app.post("/exam/attempt", verifyToken, async (req, res) => {
                             student:mongoose.Types.ObjectId(req.user.id),
                             timeStart: today
                         })
+                        isContinue = false;
                         await record.save();
                     }
-                    res.status(200).send({message: "Success", exam: data, record: record})
+                    res.status(200).send({message: "Success", exam: data, record: record, isContinue: isContinue})
                    
                 }
                 else{
@@ -240,13 +242,44 @@ app.post("/exam/attempt", verifyToken, async (req, res) => {
 app.post("/exam/submit", verifyToken, async (req, res) => {
     const params = req.body;
     Record.findById(mongoose.Types.ObjectId(params.record))
-        .populate('exam')
-        .populate('user')
+        .populate({
+            path: "exam",
+            populate: {
+                path: 'questions'
+            }
+        })
+        .populate('student')
         .populate('answers.question')
         .exec(async (err, data) => {
             if(err){
                 res.status(400).send({message: "Error", error: err.message});
             }else{
+                const questions = data.exam.questions;
+                const answers = data.answers;
+                let score = 0;
+                answers.forEach(answer => {
+                    questions.forEach(question => {
+                        if(answer.question == question._id){
+                            if(answer === question.answer){
+                                answer.isCorrect === true
+                                score++;
+                            }else{
+                                answer.isCorrect === false
+                            }
+                        }
+                    })
+                });
+                data.answers = answers;
+                data.isComplete = true;
+                data.timeEnd = Date.now();
+                await data.save();
+                data.exam.questions = undefined;
+                data.exam.log = undefined;
+                data.student.log = undefined;
+                data.student.password = undefined;
+                data.student.email = undefined;
+                data.student.createdAt = undefined;
+                data.student.updatedAt = undefined;
                 res.status(200).send({message: "Success", data: data})
             }
         })

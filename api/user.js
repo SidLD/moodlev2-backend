@@ -30,37 +30,42 @@ app.post("/register", async (req,res, next) => {
     if(ifTakenEmail || ifTakenUsername){
         res.status(401).send({message:"User already Exist"})
     }
-    else{          
-        const hashedPassword = await bcrypt.hash(params.password, 10);
-        const dbUser = new User({
-            firstName: params.firstName,
-            lastName: params.lastName,
-            middleName: params.middleName !== undefined ? params.middleName : "",
-            email: params.email,
-            password: hashedPassword,
-            gender: params.gender,
-            role: params.role,
-            age: params.age,
-            status: "pending"
-        })    
-        dbUser.save( async (err, room) => {
-            if(err) {
-                res.status(401).send({message:"Error", error:err.message});
-            }
-            room.log.push({
-                    user: mongoose.Types.ObjectId(room.id),
-                    detail: "Created by "+room.firstName+ ", "+room.lastName
-            })
-            room.save( async (err, data) => {
+    else{
+        try {         
+            const hashedPassword = await bcrypt.hash(params.password, 10);
+            const dbUser = new User({
+                firstName: params.firstName,
+                lastName: params.lastName,
+                middleName: params.middleName !== undefined ? params.middleName : "",
+                email: params.email,
+                password: hashedPassword,
+                gender: params.gender,
+                role: params.role,
+                age: params.age,
+                status: "pending"
+            })    
+            dbUser.save( async (err, room) => {
                 if(err) {
                     res.status(401).send({message:"Error", error:err.message});
-                }else{
-                    
-                data.password = undefined;
-                res.status(201).send({message:"Success", data:data});
                 }
-            }) 
-        })
+                room.log.push({
+                        user: mongoose.Types.ObjectId(room.id),
+                        detail: "Created by "+room.firstName+ ", "+room.lastName
+                })
+                room.save( async (err, data) => {
+                    if(err) {
+                        res.status(401).send({message:"Error", error:err.message});
+                    }else{
+                        
+                    data.password = undefined;
+                    res.status(201).send({message:"Success", data:data});
+                    }
+                }) 
+            })
+        }
+        catch (err){
+            res.status(400).send({message: "Error", error: err})
+        }
     }
 })
 app.post("/login", async (req,res, next) => {
