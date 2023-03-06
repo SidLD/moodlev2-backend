@@ -69,7 +69,7 @@ app.put("/record", verifyToken, async (req, res) => {
                 ifExist = true;
             }
         })
-        if(ifExist){
+        if(!ifExist){
             record.answers.push({
                 question: mongoose.Types.ObjectId(params.question),
                 answer: params.answer
