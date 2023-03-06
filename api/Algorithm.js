@@ -35,12 +35,59 @@ app.get("/analysis", verifyToken, async (req,res, next) => {
                         score: temp.score
                     })
                 });
-                km.setClusterNumber(5);
-                km.initClusterPoint(data);
-                const temp = km.clusterPoints;
+                const dataTemp = [
+                    [25, 85],
+                    [42, 73],
+                    [57, 60],
+                    [36, 68],
+                    [22, 92],
+                    [58, 50],
+                    [48, 78],
+                    [33, 64],
+                    [55, 59],
+                    [28, 87]
+                  ];
+                km.setClusterNumber(3);
+                let clusterPoints = km.initClusterPoint(dataTemp);
+                let assignments = km.initAssignDataToCluster(dataTemp, clusterPoints);
+                let newClusterPoints = km.getNewClusterPoint(assignments)
+                let isMatch = false;
+                function equalsCheck(a, b) {
+                    // check the length
+                    if (a.length != b.length) {
+                        return false;
+                    } else {
+                        let result = false;
+                
+                        // comparing each element of array 
+                        for (let i = 0; i < a.length; i++) {
+                
+                            if (a[i][0] !== b[i][0] && a[i][1] !== b[i][1] ) {
+                                return false;
+                            } else {
+                                result = true;
+                            }
+                        }
+                        return result;
+                    }
+                }
 
-                //K-means
-                res.status(200).send({message: "Ok", temp: data})
+                for(let s = 0; s < 5; s++){
+                    if(equalsCheck(clusterPoints, newClusterPoints)){
+                        isMatch = true
+                    }else{
+                        isMatch = false
+                    }
+                
+                    if(!isMatch){
+                        clusterPoints = newClusterPoints;
+                        assignments = km.initAssignDataToCluster(dataTemp, clusterPoints);
+                        newClusterPoints = km.getNewClusterPoint(assignments)
+                    }
+                    console.log(isMatch)
+                }
+
+                res.status(200).send({message: "Ok", temp: assignments})
             })
     }else{
         res.status(401).send({message: "Access Denied"});
@@ -52,64 +99,82 @@ app.get("/analysis", verifyToken, async (req,res, next) => {
 class kClass{
     constructor(){
         this.k = 3;
-        this.clusterPoints = [];
     }
 
     setClusterNumber = (param) => {this.k = param}
 
     //ex data = (1<an score san student>, 1< tos kun nanu na data na sa tingin tah significance sa score like age>)
     initClusterPoint = (data) => {
-        for(var i = 0; i < this.k; i++){
-            this.clusterPoints.push(Math.random(data.length))
+        let indexs = [];
+        let clusterPoints = [];
+        for(let i = 0; i< this.k; i++){    
+            let randomIndex = Math.floor(Math.random() * data.length);  
+            while(indexs.includes(randomIndex) && indexs.length < data.length){
+                randomIndex = Math.floor(Math.random() * data.length);    
+            }
+            clusterPoints.push(data[randomIndex]);
+            indexs.push(randomIndex);
         }
+        return clusterPoints;
     }
 
-    euclideanDistance = (pointA, clusterPoints) => {  
-        var sum = 0;
-        for (let i = 0; i < clusterPoints.length; i++) {
-        sum += Math.pow(pointA[i] - clusterPoints[i], 2);
-        }
-        return Math.sqrt(sum);
+    //euclidean distance ine, an sum san sqrt difference san duha na points ie ([1,2], [1,3])
+    euclideanDistance = (pointA, clusterPoint) => {  
+        const data1 = Math.pow(pointA[0] - clusterPoint[0] , 2)
+        const data2 = Math.pow(clusterPoint[1] - pointA[1], 2)
+        return Math.sqrt(data1 + data2);
     }
 
-    assignDataToClusterPoints = (data) => {
-        let assignments = [];
+    initAssignDataToCluster = (data, clusterPoints) => {
+        let clusterAssignments = [];
+        for (let j = 0; j < clusterPoints.length; j++) {
+            clusterAssignments.push({
+                clusterPoint: clusterPoints[j],
+                data: []
+            })
+        }
         for (let i = 0; i < data.length; i++) {
-            let distances = [];
+            //init
+            let minDistance = this.euclideanDistance(data[i], clusterPoints[0]);;
+            let closestCluster = clusterPoints[0];
+            //Kuhaon an distance san cluster pati an data then 
             for (let j = 0; j < clusterPoints.length; j++) {
-            distances.push(euclideanDistance(data[i], centroids[j]));
+                const newDistance = this.euclideanDistance(data[i], clusterPoints[j]);
+                if(minDistance > newDistance){
+                    minDistance = newDistance;
+                    closestCluster = clusterPoints[j];
+                }
             }
-            let closestCentroidIndex = distances.indexOf(Math.min(...distances));
-            assignments.push(closestCentroidIndex);
+            //igAssign kun hain an pinakaHarani na clusterPoint
+            for(let k = 0; k < clusterAssignments.length; k++){
+                if(clusterAssignments[k].clusterPoint === closestCluster){
+                    clusterAssignments[k].data.push(data[i]);
+                }
+            }
         }
-        return assignments;
+        return clusterAssignments;
     }
 
-
-    updateClusterPoints = (data, assignments, clusterPoints) => {
+    getNewClusterPoint = (assignments) => {
         let newClusterPoints = [];
-        for (let i = 0; i < clusterPoints; i++) {
-            //ig filter tah an data 
-            let clusterPointsTemp = data.filter((point, index) => assignments[index] === i)
-            if (clusterPoints.length === 0) {
-                // If a centroid has no assigned points, leave it in place
-                newClusterPoints.push(centroids[i]);
-            } else {
-                // Calculate the mean of the points in the cluster
-                let newClusterPoint = clusterPoints[0].map((value, index) => {
-                return clusterPoints.reduce((sum, point) => sum + point[index], 0) / clusterPointsTemp.length;
-                });
-                newClusterPoints.push(newClusterPoint);
+        assignments.forEach(data => {
+            if(data.data.length < 2){
+                newClusterPoints.push(data.clusterPoint)
+            }else{
+                let sumA = 0, sumB = 0;
+                data.data.forEach(point => {
+                    sumA += point[0],
+                    sumB += point[1]
+                })
+                const pointA = sumA / data.data.length;
+                const pointB = sumB / data.data.length;
+                newClusterPoints.push(
+                    [pointA, pointB]
+                )
             }
-        }
-        return newClusterPoints
+        })
+        return newClusterPoints;
     }
-
-    run = () => {
-        let assignments = assignDataToClusterPoints(data, clusterPoints);
-        clusterPoints = updateClusterPoints(data, assignments, k);
-    }
-
 }
 
 module.exports = app;
