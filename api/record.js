@@ -63,11 +63,14 @@ app.put("/record", verifyToken, async (req, res) => {
     })
     if(record){
         let ifExist = false;
-        record.answers.forEach(temp => {
-            if(temp.question === params.question){
-                temp.answer = params.answer
-                ifExist = true;
-            }
+        //Assuming that update data is an array of question = {question(an id), answer}
+        params.question.forEach(data => {
+            record.answers.forEach(recordAnswer => {
+                if(recordAnswer.question === data.question){
+                    recordAnswer.answer =data.answer
+                    ifExist = true
+                }
+            })
         })
         if(!ifExist){
             record.answers.push({
