@@ -55,6 +55,20 @@ app.get("/record", verifyToken, async (req, res) => {
     });
 });
 
+app.get("/currentRecord", verifyToken, async (req, res) => {
+  try {
+    const params = req.query;
+
+    let data = await Record.findOne({
+      exam: objectId(params.exam),
+      student: objectId(req.user.id),
+    });
+    res.status(200).send({ message: "Success", data: data });
+  } catch (error) {
+    res.status(400).send({ message: "Error", error: error.message });
+  }
+});
+
 //Pag add la ine san question/answers
 app.put("/record", verifyToken, async (req, res) => {
   const params = req.body;
@@ -78,7 +92,7 @@ app.put("/record", verifyToken, async (req, res) => {
         });
       }
       await record.save();
-      res.status(201).send({ message: "Success" });
+      res.status(201).send({ message: "Success", record: record });
     } else {
       res.status(400).send({ message: "Record Not Found" });
     }
@@ -100,4 +114,5 @@ app.delete("/record", verifyToken, async (req, res) => {
     res.status(400).send({ message: "Record Not Found" });
   }
 });
+
 module.exports = app;
