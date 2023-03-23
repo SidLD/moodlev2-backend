@@ -246,4 +246,8 @@ app.delete("/user", verifyToken, async (req,res,next)=>{
         res.status(401).json({message:"Access Denied"})
     }
 })
+app.get("/notifications", verifyToken, async (req, res) => {
+    let user = await User.find({status: "pending"});
+    return user;
+})
 module.exports = app
