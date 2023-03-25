@@ -51,19 +51,20 @@ app.post("/register", async (req, res, next) => {
       dbUser.save(async (err, room) => {
         if (err) {
           res.status(401).send({ message: "Error", error: err.message });
+        }else{
+          room.log.push({
+            user: mongoose.Types.ObjectId(room.id),
+            detail: "Created by " + room.firstName + ", " + room.lastName,
+          });
+          room.save(async (err, data) => {
+            if (err) {
+              res.status(401).send({ message: "Error", error: err.message });
+            } else {
+              data.password = undefined;
+              res.status(201).send({ message: "Success", data: data });
+            }
+          });
         }
-        room.log.push({
-          user: mongoose.Types.ObjectId(room.id),
-          detail: "Created by " + room.firstName + ", " + room.lastName,
-        });
-        room.save(async (err, data) => {
-          if (err) {
-            res.status(401).send({ message: "Error", error: err.message });
-          } else {
-            data.password = undefined;
-            res.status(201).send({ message: "Success", data: data });
-          }
-        });
       });
     } catch (err) {
       res.status(400).send({ message: "Error", error: err });
@@ -261,17 +262,17 @@ app.put("/user", verifyToken, async (req, res, next) => {
     });
   }
 });
+
 app.delete("/user", verifyToken, async (req, res, next) => {
   const params = req.body;
-  let user = await User.findById(mongoose.Types.ObjectId(params._id));
+  let user = await User.findOne({_id: mongoose.Types.ObjectId(params._id)});
+  console.log(user);
   let havePermission = false;
   if (!user) {
     res.status(400).send({ message: "User not Found" });
-  } else if (
-    user.role === "student" &&
-    (req.user.role === "admin" || req.user.role === "superadmin")
-  ) {
-    havePermission = true;
+  } else if (user.role === "student" &&
+    (req.user.role === "admin" || req.user.role === "superadmin")) {
+      havePermission = true;
   } else if (user.role === "admin" && req.user.role === "superadmin") {
     havePermission = true;
   }
@@ -296,6 +297,7 @@ app.delete("/user", verifyToken, async (req, res, next) => {
     res.status(401).json({ message: "Access Denied" });
   }
 });
+
 app.get("/notifications", verifyToken, async (req, res) => {
   try {
     let users = await User.find({ status: "pending" });
