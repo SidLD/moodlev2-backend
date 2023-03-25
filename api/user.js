@@ -280,6 +280,14 @@ app.delete("/user", verifyToken, async (req, res, next) => {
       _id: mongoose.Types.ObjectId(params._id),
     });
     if (result.deletedCount === 1) {
+      //Insert Log 
+      let admin = await User.findById(mongoose.Types.ObjectId(req.user.id));
+      admin.log.push({
+        user: mongoose.Types.ObjectId(req.user.id),
+        detail: "Delete Student "+user.lastName + ", "+user.firstName
+        
+      });
+      await admin.save();
       res.status(200).send({ message: "Success", user: result.deletedCount });
     } else {
       res.status(400).send({ message: "Something Went Wrong" });
