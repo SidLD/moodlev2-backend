@@ -281,12 +281,11 @@ app.delete("/user", verifyToken, async (req, res, next) => {
       _id: mongoose.Types.ObjectId(params._id),
     });
     if (result.deletedCount === 1) {
-      //Insert Log 
+      //Insert Log
       let admin = await User.findById(mongoose.Types.ObjectId(req.user.id));
       admin.log.push({
         user: mongoose.Types.ObjectId(req.user.id),
-        detail: "Delete Student "+user.lastName + ", "+user.firstName
-        
+        detail: "Delete Student " + user.lastName + ", " + user.firstName,
       });
       await admin.save();
       res.status(200).send({ message: "Success", user: result.deletedCount });
@@ -310,23 +309,45 @@ app.get("/notifications", verifyToken, async (req, res) => {
   }
 });
 app.put("/approveUser", verifyToken, async (req, res) => {
-    try {
-        let data = req.body;
-        let user = await User.findOneAndUpdate(
-            {
-                _id: ObjectId(data.id)
-            },
-            {
-                $set: {
-                    status: "approved"
-                }
-            },
-        );
-        console.log("APPROVED: ", user);
-        res.status(200).send({message: "User approved successfully"});
-    } catch (error) {
-        console.log("USER APPROVAL ERR: ", error);
-        res.status(400).send({message: "User approval error"});
-    }
-})
+  try {
+    let data = req.body;
+    await User.findOneAndUpdate(
+      {
+        _id: ObjectId(data._id),
+      },
+      {
+        status: "approved",
+      }
+    );
+    res.status(200).send({ message: "User approved successfully" });
+  } catch (error) {
+    console.log("USER APPROVAL ERR: ", error);
+    res.status(400).send({ message: "User approval error" });
+  }
+});
+app.put("/approveAllUsers", verifyToken, async (req, res) => {
+  try {
+    await User.updateMany(
+      {
+        status: "pending",
+      },
+      {
+        $set: {
+          status: "approved",
+        },
+      }
+    );
+    res.status(200).send({ message: "Success" });
+  } catch (error) {
+    res.status(400).send({ message: "Something went wrong", err: error });
+  }
+});
+app.delete("/rejectAllUsers", verifyToken, async (req, res) => {
+  try {
+    await User.deleteMany({ status: "pending" });
+    res.status(200).send({ message: "All users rejected successfully" });
+  } catch (error) {
+    res.status(400).send({ message: "Something went wrong", err: error });
+  }
+});
 module.exports = app;
