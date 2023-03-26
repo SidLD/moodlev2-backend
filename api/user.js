@@ -27,12 +27,7 @@ const { ObjectId } = mongoose.Types;
 app.post("/register", async (req, res, next) => {
   const params = req.body;
   const ifTakenEmail = await User.findOne({ email: params.email });
-  const ifTakenUsername = await User.findOne({
-    firstName: params.firstName,
-    lastName: params.lastName,
-    middleName: params.middleName,
-  });
-  if (ifTakenEmail || ifTakenUsername) {
+  if (ifTakenEmail) {
     res.status(401).send({ message: "User already Exist" });
   } else {
     try {
@@ -86,8 +81,13 @@ app.post("/login", async (req, res, next) => {
               const payload = {
                 id: dbUser._id,
                 firstName: dbUser.firstName,
+                middleName: dbUser?.middleName ?? "",
                 lastName: dbUser.lastName,
                 role: dbUser.role,
+                gender: dbUser.gender,
+                status: dbUser.status,
+                age: dbUser?.age,
+                email: dbUser.email,
               };
               jwt.sign(
                 payload,
