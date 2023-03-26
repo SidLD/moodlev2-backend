@@ -214,27 +214,30 @@ app.post("/exam/attempt", verifyToken, async (req, res) => {
 
                 let isContinue = true;
                 const today =  new Date();
-                if(new Date(data.dateTimeStart) < today && new Date(data.dateTimeEnd) > today){
-                    let record = await Record.findOne({ 
-                        exam:mongoose.Types.ObjectId(params.exam), 
-                        student:mongoose.Types.ObjectId(req.user.id)
-                    })
-                    if(record === null){
-                        record = new Record({
-                            exam:mongoose.Types.ObjectId(params.exam), 
-                            student:mongoose.Types.ObjectId(req.user.id),
-                            timeStart: today
-                        })
-                        isContinue = false;
-                        await record.save();
-                    }
-                    res.status(200).send({message: "Success", exam: data, record: record, isContinue: isContinue})
-                   
-                }
-                else{
+                
+                if(new Date(data.dateTimeStart) < today ){
                     data.questions = undefined;
-                    res.status(401).send({message: "Exam is Closed"})
+                    res.status(401).send({message:"Exam is not open yet."})
+                }else if(new Date(data.dateTimeEnd) > today){
+                    data.questions = undefined;
+                    res.status(401).send({message:"Exam is closed."})
+                }else{
+                        let record = await Record.findOne({ 
+                            exam:mongoose.Types.ObjectId(params.exam), 
+                            student:mongoose.Types.ObjectId(req.user.id)
+                        })
+                        if(record === null){
+                            record = new Record({
+                                exam:mongoose.Types.ObjectId(params.exam), 
+                                student:mongoose.Types.ObjectId(req.user.id),
+                                timeStart: today
+                            })
+                            isContinue = false;
+                            await record.save();
+                        }
+                        res.status(200).send({message: "Success", exam: data, record: record, isContinue: isContinue})
                 }
+                   
             }
         }
     )
