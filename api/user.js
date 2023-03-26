@@ -81,12 +81,12 @@ app.post("/login", async (req, res, next) => {
               const payload = {
                 id: dbUser._id,
                 firstName: dbUser.firstName,
-                middleName: dbUser?.middleName ?? "",
+                middleName: dbUser.middleName,
                 lastName: dbUser.lastName,
                 role: dbUser.role,
                 gender: dbUser.gender,
                 status: dbUser.status,
-                age: dbUser?.age,
+                age: dbUser.age,
                 email: dbUser.email,
               };
               jwt.sign(
