@@ -259,8 +259,8 @@ app.post("/exam/submit", verifyToken, async (req, res) => {
                 let score = 0;
                 answers.forEach(answer => {
                     questions.forEach(question => {
-                        if(answer.question == question._id){
-                            if(answer === question.answer){
+                        if(answer.question._id.equals(question._id)){
+                            if(answer.answer === question.answer){
                                 answer.isCorrect === true
                                 score++;
                             }else{
@@ -269,6 +269,7 @@ app.post("/exam/submit", verifyToken, async (req, res) => {
                         }
                     })
                 });
+                data.score = score;
                 data.answers = answers;
                 data.isComplete = true;
                 data.timeEnd = Date.now();
