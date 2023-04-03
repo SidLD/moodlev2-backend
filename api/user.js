@@ -26,9 +26,9 @@ const { ObjectId } = mongoose.Types;
  */
 app.post("/register", async (req, res, next) => {
   const params = req.body;
-  const ifTakenEmail = await User.findOne({ email: params.email });
-  if (ifTakenEmail) {
-    res.status(401).send({ message: "User already Exist" });
+  const isSchoolIDTaken = await User.findOne({ schoolId: params.schoolId });
+  if (isSchoolIDTaken) {
+    res.status(401).send({ message: "School ID already exist" });
   } else {
     try {
       const hashedPassword = await bcrypt.hash(params.password, 10);
