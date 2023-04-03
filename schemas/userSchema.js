@@ -13,6 +13,10 @@ const logSchema = mongoose.Schema(
 
 const userSchema = mongoose.Schema(
   {
+    schoolId: {
+      type: String,
+      required: true,
+    },
     firstName: {
       type: String,
       required: true,

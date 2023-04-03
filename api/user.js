@@ -33,6 +33,7 @@ app.post("/register", async (req, res, next) => {
     try {
       const hashedPassword = await bcrypt.hash(params.password, 10);
       const dbUser = new User({
+        schoolId: params.schoolId,
         firstName: params.firstName,
         lastName: params.lastName,
         middleName: params.middleName !== undefined ? params.middleName : "",
@@ -68,7 +69,7 @@ app.post("/register", async (req, res, next) => {
 });
 app.post("/login", async (req, res, next) => {
   const userLoggingIn = req.body;
-  User.findOne({ email: userLoggingIn.email }).then((dbUser) => {
+  User.findOne({ schoolId: userLoggingIn.schoolId }).then((dbUser) => {
     if (!dbUser) {
       res.status(401).send({ message: "Incorrect Email or Password" });
     } else {
@@ -80,6 +81,7 @@ app.post("/login", async (req, res, next) => {
             if (dbUser.status === "approved") {
               const payload = {
                 id: dbUser._id,
+                schoolId: dbUser.schoolId,
                 firstName: dbUser.firstName,
                 middleName: dbUser.middleName,
                 lastName: dbUser.lastName,

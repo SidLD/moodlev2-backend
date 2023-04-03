@@ -27,11 +27,13 @@ app.post("/exam", verifyToken, async (req, res) => {
     const params = req.body;
     if(req.user.role === "admin" || req.user.role === "superadmin"){
         try {
-            const {dateTimeStart, dateTimeEnd, category, duration, itemNumber} = params;
+            const {dateTimeStart, dateTimeEnd, category, duration, itemNumber, title, description} = params;
             if(dateTimeStart > dateTimeEnd){
                 res.status(300).send({message: "Invalid Time"})
             }
             const newExam = new Exam({
+                title: title,
+                description: description,
                 dateTimeStart : new Date(dateTimeStart),
                 dateTimeEnd : new Date(dateTimeEnd),
                 duration: duration,
@@ -94,7 +96,7 @@ app.get("/exam", verifyToken, async (req, res) => {
                     path: 'category',
                     select: '_id name'
                 })
-                .select(['dateTimeStart', 'dateTimeEnd', 'duration', 'itemNumber', 'category']);
+                .select(['dateTimeStart', 'dateTimeEnd', 'duration', 'itemNumber', 'category', 'title', 'description']);
             let isContinue = false;
             if(record){
                 isContinue = record.isContinue;
@@ -200,7 +202,7 @@ app.post("/exam/attempt", verifyToken, async (req, res) => {
             path: 'category',
             select: '_id name'
         })
-        .select(['dateTimeStart', 'dateTimeEnd', 'duration', 'itemNumber', 'category'])
+        .select(['dateTimeStart', 'dateTimeEnd', 'duration', 'itemNumber', 'category', 'title', 'description'])
         .exec(async (err, data) => {
             if(err){
                 res.status(400).send({message: "Error", error: err.message})
@@ -215,10 +217,10 @@ app.post("/exam/attempt", verifyToken, async (req, res) => {
                 let isContinue = true;
                 const today =  new Date();
                 
-                if(new Date(data.dateTimeStart) < today ){
+                if(today < new Date(data.dateTimeStart)){
                     data.questions = undefined;
                     res.status(401).send({message:"Exam is not open yet."})
-                }else if(new Date(data.dateTimeEnd) > today){
+                }else if(today > new Date(data.dateTimeEnd)){
                     data.questions = undefined;
                     res.status(401).send({message:"Exam is closed."})
                 }else{
@@ -256,13 +258,16 @@ app.post("/exam/submit", verifyToken, async (req, res) => {
         .exec(async (err, data) => {
             if(err){
                 res.status(400).send({message: "Error", error: err.message});
-            }else{
+            } else if (!data){
+                res.status(400).send({message: "Error", error: "Data not found"});
+            } else {
                 const questions = data.exam.questions;
                 const answers = data.answers;
                 let score = 0;
                 answers.forEach(answer => {
                     questions.forEach(question => {
-                        if(answer.question._id.equals(question._id)){
+                        if(answer.question &&
+                            answer.question._id.equals(question._id)){
                             if(answer.answer === question.answer){
                                 answer.isCorrect === true
                                 score++;

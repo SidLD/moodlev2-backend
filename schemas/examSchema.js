@@ -13,6 +13,13 @@ const logSchema = mongoose.Schema(
 //student status is pending or approved
 const examSchema = mongoose.Schema(
   {
+    title: {
+      type: String,
+      required: true,
+    },
+    description: {
+      type: String,
+    },
     dateTimeStart: {
       type: Date,
     },
