@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken');
 
 //functions
 const verifyToken = async (req,res, next) => {
-    const token = req.headers['x-access-token']?.split(' ')[1];
+    const token = req.headers['x-access-token'].split(' ')[1];
     //Decoded data = id, username, type
     // console.log(token);
     req.user = {};
