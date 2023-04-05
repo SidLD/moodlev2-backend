@@ -1,16 +1,38 @@
 const express = require('express');
-const bodyParser = require('body-parser');
-const mongoose = require('mongoose');
-const app = express();
-
-const Category = require("../schemas/categorySchema")
+const {
+  getForecast
+  } = require("../Utilities/Forecast");
 
 /**
  * An params id didi is '_id'.
  */
 
 const forecast =  async (req,res) => {
-    let testData = [89, 89.9 , 80, 83, 57, 52];
+    let testData = [{
+        date: "Sdsd",
+        score:20
+      },
+      {
+        date: "Sdsd",
+        score:78
+      },
+      {
+        date: "Sdsd",
+        score:30
+      },
+      {
+        date: "Sdsd",
+        score:90
+      },
+      {
+        date: "Sdsd",
+        score:110
+      }
+    ];
+
+    let data = getForecast(testData);
+    
+    res.status(200).send({message: "Success", data: data})
 
     
 }

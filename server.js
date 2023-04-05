@@ -22,7 +22,7 @@ const categoryAPI = require("./api/category");
 const examAPI = require("./api/exam");
 const questionAPI = require("./api/question");
 const recordAPI = require("./api/record");
-const analysisAPI = require("./api/Algorithm")
+const analysisAPI = require("./api/forecast")
 
 app.use(userAPI);
 app.use(categoryAPI);
