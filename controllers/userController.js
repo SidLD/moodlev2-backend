@@ -15,7 +15,7 @@ const { ObjectId } = mongoose.Types;
     middleName: String (Optional)
     gender: boolean,
     password: String,
-    email: String
+    schoolId: String
     age: Number,
     log: [{
             user: id,
@@ -24,8 +24,8 @@ const { ObjectId } = mongoose.Types;
  */
 const register = async (req, res) => {
   const params = req.body;
-  const ifTakenEmail = await User.findOne({ email: params.email });
-  if (ifTakenEmail) {
+  const schoolId = await User.findOne({ schoolId: params.schoolId });
+  if (schoolId) {
     res.status(401).send({ message: "User already Exist" });
   } else {
     try {
@@ -34,7 +34,7 @@ const register = async (req, res) => {
         firstName: params.firstName,
         lastName: params.lastName,
         middleName: params.middleName !== undefined ? params.middleName : "",
-        email: params.email,
+        schoolId: params.schoolId,
         password: hashedPassword,
         gender: params.gender,
         role: params.role,
@@ -66,9 +66,9 @@ const register = async (req, res) => {
 };
 const login =  async (req, res, next) => {
   const userLoggingIn = req.body;
-  User.findOne({ email: userLoggingIn.email }).then((dbUser) => {
+  User.findOne({ schoolId: userLoggingIn.schoolId }).then((dbUser) => {
     if (!dbUser) {
-      res.status(401).send({ message: "Incorrect Email or Password" });
+      res.status(401).send({ message: "Incorrect schoolId or Password" });
     } else {
       bcrypt
         .compare(userLoggingIn.password, dbUser.password)
@@ -85,7 +85,7 @@ const login =  async (req, res, next) => {
                 gender: dbUser.gender,
                 status: dbUser.status,
                 age: dbUser.age,
-                email: dbUser.email,
+                schoolId: dbUser.schoolId,
               };
               jwt.sign(
                 payload,
@@ -106,13 +106,13 @@ const login =  async (req, res, next) => {
               res.status(401).send({ message: "User not Aprroved" });
             }
           } else {
-            res.status(401).send({ message: "Invalid Email or Password" });
+            res.status(401).send({ message: "Invalid schoolId or Password" });
           }
         })
         .catch((err) => {
           res
             .status(401)
-            .send({ message: "Invalid Email or Password", error: err });
+            .send({ message: "Invalid schoolId or Password", error: err });
         });
     }
   });
@@ -146,8 +146,8 @@ const getUser = async (req, res, next) => {
 const updateUser = async (req, res, next) => {
   const userToBeUpdate = req.body;
   //para ine makita kun nanu an guinBago
-  const doChangeEmail =
-    userToBeUpdate.email === undefined ? "" : "Update Email, ";
+  const doChangeschoolId =
+    userToBeUpdate.schoolId === undefined ? "" : "Update schoolId, ";
   const doChageGender =
     userToBeUpdate.gender === undefined ? "" : "Update Gender, ";
   const doChageAge = userToBeUpdate.age === undefined ? "" : "Update Age, ";
@@ -188,7 +188,7 @@ const updateUser = async (req, res, next) => {
         : user.middleName;
       user.gender = userToBeUpdate.gender ? userToBeUpdate.gender : user.gender;
       user.age = userToBeUpdate.age ? userToBeUpdate.age : user.age;
-      user.email = userToBeUpdate.email ? userToBeUpdate.email : user.email;
+      user.schoolId = userToBeUpdate.schoolId ? userToBeUpdate.schoolId : user.schoolId;
       user.role = userToBeUpdate.role ? userToBeUpdate.role : user.role;
       user.status = userToBeUpdate.status ? userToBeUpdate.status : user.status;
 
@@ -200,7 +200,7 @@ const updateUser = async (req, res, next) => {
         user: mongoose.Types.ObjectId(req.user.id),
         detail:
           doChangePassword +
-          doChangeEmail +
+          doChangeschoolId +
           doChangeStatus +
           doChageAge +
           doChangeRole +
@@ -234,7 +234,7 @@ const updateUser = async (req, res, next) => {
       : user.middleName;
     user.gender = userToBeUpdate.gender ? userToBeUpdate.gender : user.gender;
     user.age = userToBeUpdate.age ? userToBeUpdate.age : user.age;
-    user.email = userToBeUpdate.email ? userToBeUpdate.email : user.email;
+    user.schoolId = userToBeUpdate.schoolId ? userToBeUpdate.schoolId : user.schoolId;
     user.role = userToBeUpdate.role ? userToBeUpdate.role : user.role;
     if (doChangePassword) {
       const hashedPassword = await bcrypt.hash(user.password, 10);
@@ -243,7 +243,7 @@ const updateUser = async (req, res, next) => {
     user.log.push({
       user: mongoose.Types.ObjectId(req.user.id),
       detail:
-        doChangeEmail +
+        doChangeschoolId +
         doChangeRole +
         doChageAge +
         doChangeFirstName +

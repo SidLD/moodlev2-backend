@@ -30,6 +30,7 @@
                 score: alpha * data[index].score + (1 - alpha) * data[index-1].score
            })
         }
+
         //Forecasting
         for (let index = n; index < n + numOfForecast; index++) {
             forecastResult.push({

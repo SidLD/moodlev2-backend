@@ -30,18 +30,18 @@ const userSchema = mongoose.Schema(
       type: String,
       required: true,
     },
-    email: {
+    schoolId: {
       type: String,
       required: true,
       lowercase: true,
       min: 10,
       validate: {
         validator: function (v) {
-          return /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(v);
+          return /\d{2}-\d{5}/.test(v);
         },
-        message: "Please enter a valid email",
+        message: "Please enter a valid ID Format",
       },
-      required: [true, "Email required"],
+      required: [true, "Not valid ID format"],
     },
     gender: {
       type: String,
