@@ -24,7 +24,7 @@ app.put("/user", verifyToken, updateUser);
 app.delete("/user", verifyToken, deleteUser);
 app.post("/approveUser", verifyToken, approveUser)
 
-app.put("/getNotifications", verifyToken, getNotifications);
+app.get("/notifications", verifyToken, getNotifications);
 app.delete("/rejectAllUsers", verifyToken, rejectAllUsers);
 app.post("/approveAllUser", verifyToken, approveAllUser)
 
