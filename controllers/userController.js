@@ -64,8 +64,9 @@ const register = async (req, res) => {
     }
   }
 };
-const login =  async (req, res, next) => {
+const login =  async (req, res) => {
   const userLoggingIn = req.body;
+  console.log(req.body)
   User.findOne({ schoolId: userLoggingIn.schoolId }).then((dbUser) => {
     if (!dbUser) {
       res.status(401).send({ message: "Incorrect schoolId or Password" });

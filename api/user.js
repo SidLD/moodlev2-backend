@@ -17,8 +17,8 @@ const {
   approveAllUser
 } = require("../controllers/userController");
 
-app.post("/register", verifyToken, register);
-app.post("/login", verifyToken, login);
+app.post("/register", register);
+app.post("/login", login);
 app.get("/user", verifyToken, getUser);
 app.put("/user", verifyToken, updateUser);
 app.delete("/user", verifyToken, deleteUser);

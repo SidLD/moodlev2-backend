@@ -365,7 +365,7 @@ const submitExam = async (req, res) => {
         data.exam.log = undefined;
         data.student.log = undefined;
         data.student.password = undefined;
-        data.student.email = undefined;
+        data.student.schoolId = undefined;
         data.student.createdAt = undefined;
         data.student.updatedAt = undefined;
         res.status(200).send({ message: "Success", data: data });
