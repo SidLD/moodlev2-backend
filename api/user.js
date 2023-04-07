@@ -1,4 +1,3 @@
-
 const express = require("express");
 const app = express();
 
@@ -14,7 +13,8 @@ const {
   approveUser,
   getNotifications,
   rejectAllUsers,
-  approveAllUser
+  approveAllUser,
+  fetchAllStudents,
 } = require("../controllers/userController");
 
 app.post("/register", register);
@@ -22,10 +22,11 @@ app.post("/login", login);
 app.get("/user", verifyToken, getUser);
 app.put("/user", verifyToken, updateUser);
 app.delete("/user", verifyToken, deleteUser);
-app.post("/approveUser", verifyToken, approveUser)
+app.post("/approveUser", verifyToken, approveUser);
 
 app.get("/notifications", verifyToken, getNotifications);
 app.delete("/rejectAllUsers", verifyToken, rejectAllUsers);
-app.post("/approveAllUser", verifyToken, approveAllUser)
+app.post("/approveAllUser", verifyToken, approveAllUser);
+app.get("/fetchAllStudents", verifyToken, fetchAllStudents);
 
 module.exports = app;

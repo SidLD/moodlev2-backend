@@ -6,6 +6,7 @@ const bcrypt = require("bcrypt");
 const app = express();
 
 const User = require("../schemas/userSchema");
+const recordSchema = require("../schemas/recordSchema");
 
 const { ObjectId } = mongoose.Types;
 /**
@@ -35,6 +36,7 @@ const register = async (req, res) => {
         lastName: params.lastName,
         middleName: params.middleName !== undefined ? params.middleName : "",
         schoolId: params.schoolId,
+        email: params.email,
         password: hashedPassword,
         gender: params.gender,
         role: params.role,
@@ -44,7 +46,7 @@ const register = async (req, res) => {
       dbUser.save(async (err, room) => {
         if (err) {
           res.status(401).send({ message: "Error", error: err.message });
-        }else{
+        } else {
           room.log.push({
             user: mongoose.Types.ObjectId(room.id),
             detail: "Created by " + room.firstName + ", " + room.lastName,
@@ -64,9 +66,9 @@ const register = async (req, res) => {
     }
   }
 };
-const login =  async (req, res) => {
+const login = async (req, res) => {
   const userLoggingIn = req.body;
-  console.log(req.body)
+  console.log(req.body);
   User.findOne({ schoolId: userLoggingIn.schoolId }).then((dbUser) => {
     if (!dbUser) {
       res.status(401).send({ message: "Incorrect schoolId or Password" });
@@ -189,7 +191,9 @@ const updateUser = async (req, res, next) => {
         : user.middleName;
       user.gender = userToBeUpdate.gender ? userToBeUpdate.gender : user.gender;
       user.age = userToBeUpdate.age ? userToBeUpdate.age : user.age;
-      user.schoolId = userToBeUpdate.schoolId ? userToBeUpdate.schoolId : user.schoolId;
+      user.schoolId = userToBeUpdate.schoolId
+        ? userToBeUpdate.schoolId
+        : user.schoolId;
       user.role = userToBeUpdate.role ? userToBeUpdate.role : user.role;
       user.status = userToBeUpdate.status ? userToBeUpdate.status : user.status;
 
@@ -235,7 +239,9 @@ const updateUser = async (req, res, next) => {
       : user.middleName;
     user.gender = userToBeUpdate.gender ? userToBeUpdate.gender : user.gender;
     user.age = userToBeUpdate.age ? userToBeUpdate.age : user.age;
-    user.schoolId = userToBeUpdate.schoolId ? userToBeUpdate.schoolId : user.schoolId;
+    user.schoolId = userToBeUpdate.schoolId
+      ? userToBeUpdate.schoolId
+      : user.schoolId;
     user.role = userToBeUpdate.role ? userToBeUpdate.role : user.role;
     if (doChangePassword) {
       const hashedPassword = await bcrypt.hash(user.password, 10);
@@ -264,14 +270,16 @@ const updateUser = async (req, res, next) => {
 
 const deleteUser = async (req, res, next) => {
   const params = req.body;
-  let user = await User.findOne({_id: mongoose.Types.ObjectId(params._id)});
-//   console.log(user);
+  let user = await User.findOne({ _id: mongoose.Types.ObjectId(params._id) });
+  //   console.log(user);
   let havePermission = false;
   if (!user) {
     res.status(400).send({ message: "User not Found" });
-  } else if (user.role === "student" &&
-    (req.user.role === "admin" || req.user.role === "superadmin")) {
-      havePermission = true;
+  } else if (
+    user.role === "student" &&
+    (req.user.role === "admin" || req.user.role === "superadmin")
+  ) {
+    havePermission = true;
   } else if (user.role === "admin" && req.user.role === "superadmin") {
     havePermission = true;
   }
@@ -308,19 +316,19 @@ const getNotifications = async (req, res) => {
 };
 const approveUser = async (req, res) => {
   try {
-    if(req.user.role === "admin" || req.user.role == "superadmin"){
-        let data = req.body;
-        await User.findOneAndUpdate(
+    if (req.user.role === "admin" || req.user.role == "superadmin") {
+      let data = req.body;
+      await User.findOneAndUpdate(
         {
-            _id: ObjectId(data._id),
+          _id: ObjectId(data._id),
         },
         {
-            status: "approved",
+          status: "approved",
         }
-        );
-        res.status(200).send({ message: "User approved successfully" });
-    }else{
-        res.status(401).send({ message: "User approval denied" });
+      );
+      res.status(200).send({ message: "User approved successfully" });
+    } else {
+      res.status(401).send({ message: "User approval denied" });
     }
   } catch (error) {
     console.log("USER APPROVAL ERR: ", error);
@@ -329,33 +337,82 @@ const approveUser = async (req, res) => {
 };
 const approveAllUser = async (req, res) => {
   try {
-    if(req.user.role === "admin" || req.user.role == "superadmin"){
-        await User.updateMany(
+    if (req.user.role === "admin" || req.user.role == "superadmin") {
+      await User.updateMany(
         {
-            status: "pending",
+          status: "pending",
         },
         {
-            $set: {
+          $set: {
             status: "approved",
-            },
+          },
         }
-        );
-        res.status(200).send({ message: "Success" });
-    }else{
-        res.status(401).send({ message: "Operation Denied" });
+      );
+      res.status(200).send({ message: "Success" });
+    } else {
+      res.status(401).send({ message: "Operation Denied" });
     }
   } catch (error) {
     res.status(400).send({ message: "Something went wrong", err: error });
   }
 };
-const rejectAllUsers =  async (req, res) => {
+const rejectAllUsers = async (req, res) => {
   try {
-    if(req.user.role === "admin" || req.user.role == "superadmin"){
-        await User.deleteMany({ status: "pending" });
-        res.status(200).send({ message: "All users rejected successfully" });
+    if (req.user.role === "admin" || req.user.role == "superadmin") {
+      await User.deleteMany({ status: "pending" });
+      res.status(200).send({ message: "All users rejected successfully" });
+    } else {
+      res.status(401).send({ message: "Access Denied" });
     }
-    else{
-        res.status(401).send({ message: "Access Denied" });
+  } catch (error) {
+    res.status(400).send({ message: "Something went wrong", err: error });
+  }
+};
+const fetchAllStudents = async (req, res) => {
+  try {
+    const records = await recordSchema.aggregate([
+      {
+        $lookup: {
+          from: "users",
+          localField: "student",
+          foreignField: "_id",
+          as: "student",
+        },
+      },
+      {
+        $unwind: {
+          path: "$student",
+        },
+      },
+      {
+        $lookup: {
+          from: "exams",
+          localField: "exam",
+          foreignField: "_id",
+          as: "exam",
+        },
+      },
+      {
+        $unwind: {
+          path: "$exam",
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          exam: 1,
+          student: 1,
+          score: 1,
+          timeStart: 1,
+          timeEnd: 1,
+        },
+      },
+    ]);
+
+    if (records) {
+      res.status(200).send({ message: "Success", data: records });
+    } else {
+      res.status(400).send({ message: "No record found" });
     }
   } catch (error) {
     res.status(400).send({ message: "Something went wrong", err: error });
@@ -363,12 +420,13 @@ const rejectAllUsers =  async (req, res) => {
 };
 
 exports.register = register;
-exports.login  = login;
-exports.updateUser   = updateUser;
+exports.login = login;
+exports.updateUser = updateUser;
 exports.deleteUser = deleteUser;
 exports.getUser = getUser;
 
 exports.approveUser = approveUser;
 exports.getNotifications = getNotifications;
-exports.rejectAllUsers = rejectAllUsers
-exports.approveAllUser  = approveAllUser;
+exports.rejectAllUsers = rejectAllUsers;
+exports.approveAllUser = approveAllUser;
+exports.fetchAllStudents = fetchAllStudents;
