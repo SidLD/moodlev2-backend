@@ -112,9 +112,9 @@ const getCurrentRecord = async (req, res) => {
   }
 };
 
-const getStudentsWithoutAttempt = async (req, res) => {
+const forceStartExam = async (req, res) => {
   try {
-    const { examId } = req.query;
+    const { examId } = req.body;
     const today = new Date();
     let payload = [];
     let students = [];
@@ -193,4 +193,4 @@ exports.getRecord = getRecord;
 exports.deleteRecord = deleteRecord;
 exports.updateRecord = updateRecord;
 exports.getCurrentRecord = getCurrentRecord;
-exports.getStudentsWithoutAttempt = getStudentsWithoutAttempt;
+exports.forceStartExam = forceStartExam;
