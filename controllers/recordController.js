@@ -1,5 +1,8 @@
 const mongoose = require("mongoose");
 const Record = require("../schemas/recordSchema");
+const userSchema = require("../schemas/userSchema");
+const { attemptExamination } = require("../repositories/examRepository");
+const recordSchema = require("../schemas/recordSchema");
 
 const { ObjectId } = mongoose.Types;
 
@@ -109,7 +112,85 @@ const getCurrentRecord = async (req, res) => {
   }
 };
 
+const getStudentsWithoutAttempt = async (req, res) => {
+  try {
+    const { examId } = req.query;
+    const today = new Date();
+    let payload = [];
+    let students = [];
+    const noRecord = await userSchema.find({
+      role: "student",
+      status: "approved",
+    });
+    if (noRecord && noRecord.length > 0) {
+      noRecord.map((rec) => students.push(rec._id));
+    } else {
+      res.status(400).send({ message: "No student found" });
+    }
+    const examData = await attemptExamination(examId);
+    if (examData && examData.length > 0) {
+      if (today < new Date(examData[0].dateTimeStart)) {
+        return res.status(400).send({ message: "Exam is not open yet." });
+      } else if (today > new Date(examData[0].dateTimeEnd)) {
+        return res.status(400).send({ message: "Exam is closed." });
+      } else {
+        const recordList = await recordSchema.find(
+          {
+            student: {
+              $in: students,
+            },
+            exam: examData[0]._id,
+          },
+          {
+            _id: 0,
+            student: 1,
+          }
+        );
+        if (recordList && recordList.length > 0) {
+          if (recordList.length === students.length) {
+            students = [];
+            payload = [];
+            return res
+              .status(200)
+              .send({ message: "Exam is now started for all students" });
+          } else {
+            const filteredData = students.filter((e) => {
+              return !recordList.some((f) => f.student.equals(e));
+            });
+            filteredData.forEach((e) => {
+              payload.push({
+                exam: examData[0]._id,
+                student: e,
+                timeStart: today,
+              });
+            });
+          }
+        } else {
+          students.forEach((id) => {
+            payload.push({
+              exam: examData[0]._id,
+              student: id,
+              timeStart: today,
+            });
+          });
+        }
+        await recordSchema.insertMany(payload);
+        students = [];
+        payload = [];
+        res
+          .status(200)
+          .send({ message: "Exam is now started for all students" });
+      }
+    } else {
+      res.status(400).send({ message: "Exam not found" });
+    }
+  } catch (error) {
+    res.status(400).send({ message: "Error", error: error.message });
+  }
+};
+
 exports.getRecord = getRecord;
 exports.deleteRecord = deleteRecord;
 exports.updateRecord = updateRecord;
 exports.getCurrentRecord = getCurrentRecord;
+exports.getStudentsWithoutAttempt = getStudentsWithoutAttempt;

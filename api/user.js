@@ -26,7 +26,7 @@ app.post("/approveUser", verifyToken, approveUser);
 
 app.get("/notifications", verifyToken, getNotifications);
 app.delete("/rejectAllUsers", verifyToken, rejectAllUsers);
-app.post("/approveAllUser", verifyToken, approveAllUser);
+app.put("/approveAllUsers", verifyToken, approveAllUser);
 app.get("/fetchAllStudents", verifyToken, fetchAllStudents);
 
 module.exports = app;

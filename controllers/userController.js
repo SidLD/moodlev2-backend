@@ -7,6 +7,7 @@ const app = express();
 
 const User = require("../schemas/userSchema");
 const recordSchema = require("../schemas/recordSchema");
+const { fetchStudentRecords } = require("../repositories/userRepository");
 
 const { ObjectId } = mongoose.Types;
 /**
@@ -370,50 +371,8 @@ const rejectAllUsers = async (req, res) => {
 };
 const fetchAllStudents = async (req, res) => {
   try {
-    const records = await recordSchema.aggregate([
-      {
-        $lookup: {
-          from: "users",
-          localField: "student",
-          foreignField: "_id",
-          as: "student",
-        },
-      },
-      {
-        $unwind: {
-          path: "$student",
-        },
-      },
-      {
-        $lookup: {
-          from: "exams",
-          localField: "exam",
-          foreignField: "_id",
-          as: "exam",
-        },
-      },
-      {
-        $unwind: {
-          path: "$exam",
-        },
-      },
-      {
-        $project: {
-          _id: 0,
-          exam: 1,
-          student: 1,
-          score: 1,
-          timeStart: 1,
-          timeEnd: 1,
-        },
-      },
-    ]);
-
-    if (records) {
-      res.status(200).send({ message: "Success", data: records });
-    } else {
-      res.status(400).send({ message: "No record found" });
-    }
+    const records = await fetchStudentRecords();
+    res.status(200).send({ message: "Success", data: records });
   } catch (error) {
     res.status(400).send({ message: "Something went wrong", err: error });
   }

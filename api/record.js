@@ -8,11 +8,13 @@ const {
   updateRecord,
   deleteRecord,
   getCurrentRecord,
+  getStudentsWithoutAttempt,
 } = require("../controllers/recordController");
 
 app.get("/record", verifyToken, getRecord);
 app.put("/record", verifyToken, updateRecord);
 app.delete("/record", verifyToken, deleteRecord);
 app.get("/currentRecord", verifyToken, getCurrentRecord);
+app.get("/getStudentsWithoutAttempt", verifyToken, getStudentsWithoutAttempt);
 
 module.exports = app;
