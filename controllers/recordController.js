@@ -125,7 +125,7 @@ const forceStartExam = async (req, res) => {
     if (noRecord && noRecord.length > 0) {
       noRecord.map((rec) => students.push(rec._id));
     } else {
-      res.status(400).send({ message: "No student found" });
+      return res.status(400).send({ message: "No student found" });
     }
     const examData = await attemptExamination(examId);
     if (examData && examData.length > 0) {

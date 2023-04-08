@@ -2,6 +2,8 @@ const Exam = require("../schemas/examSchema");
 const Record = require("../schemas/recordSchema");
 const Question = require("../schemas/questionSchema");
 const mongoose = require("mongoose");
+const { attemptExamination } = require("../repositories/examRepository");
+const userSchema = require("../schemas/userSchema");
 
 /**
  *     ****** Structure *****
@@ -124,39 +126,31 @@ const getExams = async (req, res) => {
         if (examStartDate < today && examEndDate > today) {
           if (record) {
             if (today - examEndDate < duration) {
-              res
-                .status(401)
-                .send({
-                  message: "Exam is Closed",
-                  isContinue: false,
-                  exam: exam,
-                });
+              res.status(401).send({
+                message: "Exam is Closed",
+                isContinue: false,
+                exam: exam,
+              });
             } else {
-              res
-                .status(200)
-                .send({
-                  message: " Success",
-                  isContinue: isContinue,
-                  exam: exam,
-                });
-            }
-          } else {
-            res
-              .status(200)
-              .send({
+              res.status(200).send({
                 message: " Success",
                 isContinue: isContinue,
                 exam: exam,
               });
-          }
-        } else {
-          res
-            .status(401)
-            .send({
-              message: "Exam is Closed",
+            }
+          } else {
+            res.status(200).send({
+              message: " Success",
               isContinue: isContinue,
               exam: exam,
             });
+          }
+        } else {
+          res.status(401).send({
+            message: "Exam is Closed",
+            isContinue: isContinue,
+            exam: exam,
+          });
         }
       } else {
         res.status(404).send({ message: "Exam not Found" });
@@ -311,14 +305,12 @@ const attemptExam = async (req, res) => {
             isContinue = false;
             await record.save();
           }
-          res
-            .status(200)
-            .send({
-              message: "Success",
-              exam: data,
-              record: record,
-              isContinue: isContinue,
-            });
+          res.status(200).send({
+            message: "Success",
+            exam: data,
+            record: record,
+            isContinue: isContinue,
+          });
         }
       }
     });
@@ -373,9 +365,54 @@ const submitExam = async (req, res) => {
     });
 };
 
+const fetchExamProgress = async (req, res) => {
+  try {
+    const { examId } = req.query;
+    let students = [];
+    let checker = false;
+    const noRecord = await userSchema.find({
+      role: "student",
+      status: "approved",
+    });
+    if (noRecord && noRecord.length > 0) {
+      noRecord.map((rec) => students.push(rec._id));
+    } else {
+      return res.status(400).send({ message: "No user found" });
+    }
+    const examData = await attemptExamination(examId);
+    if (examData && examData.length > 0) {
+      const recordList = await Record.find(
+        {
+          student: {
+            $in: students,
+          },
+          exam: examData[0]._id,
+        },
+        {
+          _id: 0,
+          student: 1,
+        }
+      );
+      if (recordList && recordList.length > 0) {
+        if (recordList.length === students.length) {
+          checker = true;
+        } else {
+          checker = false;
+        }
+      } else {
+        checker = false;
+      }
+      res.status(200).send({message: "Success", isTakenByAll: checker})
+    }
+  } catch (error) {
+    res.status(400).send({ message: "Something went wrong", err: error.message });
+  }
+};
+
 exports.createExam = createExam;
 exports.getExams = getExams;
 exports.updateExam = updateExam;
 exports.deleteExam = deleteExam;
 exports.attemptExam = attemptExam;
 exports.submitExam = submitExam;
+exports.fetchExamProgress = fetchExamProgress;
