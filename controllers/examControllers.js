@@ -69,7 +69,7 @@ const createExam = async (req, res) => {
 const getExams = async (req, res) => {
   const params = req.query;
   try {
-    if (req.user.role === "admin" || req.user.role === "superadmin") {
+    // if (req.user.role === "admin" || req.user.role === "superadmin") {
       Exam.where(params)
         .populate({
           path: "log.user",
@@ -93,69 +93,69 @@ const getExams = async (req, res) => {
             res.status(200).send({ message: "Success", data: data });
           }
         });
-    } else {
-      let record = await Record.findOne({
-        exam: mongoose.Types.ObjectId(params.exam),
-        student: mongoose.Types.ObjectId(req.user.id),
-        isComplete: false,
-      });
-      let exam = await Exam.findOne({
-        _id: mongoose.Types.ObjectId(params.exam),
-      })
-        .populate({
-          path: "category",
-          select: "_id name",
-        })
-        .select([
-          "dateTimeStart",
-          "dateTimeEnd",
-          "duration",
-          "itemNumber",
-          "category",
-          "title",
-          "description",
-        ]);
-      let isContinue = false;
-      if (record) {
-        isContinue = record.isContinue;
-      }
-      if (exam !== null) {
-        const today = new Date();
-        const examStartDate = new Date(exam.dateTimeStart);
-        const examEndDate = new Date(exam.dateTimeEnd);
-        if (examStartDate < today && examEndDate > today) {
-          if (record) {
-            if (today - examEndDate < duration) {
-              res.status(401).send({
-                message: "Exam is Closed",
-                isContinue: false,
-                exam: exam,
-              });
-            } else {
-              res.status(200).send({
-                message: " Success",
-                isContinue: isContinue,
-                exam: exam,
-              });
-            }
-          } else {
-            res.status(200).send({
-              message: " Success",
-              isContinue: isContinue,
-              exam: exam,
-            });
-          }
-        } else {
-          res.status(401).send({
-            message: "Exam is Closed",
-            isContinue: isContinue,
-            exam: exam,
-          });
-        }
-      } else {
-        res.status(404).send({ message: "Exam not Found" });
-      }
-    }
+    // } else {
+    //   let record = await Record.findOne({
+    //     exam: mongoose.Types.ObjectId(params.exam),
+    //     student: mongoose.Types.ObjectId(req.user.id),
+    //     isComplete: false,
+    //   });
+    //   let exam = await Exam.findOne({
+    //     _id: mongoose.Types.ObjectId(params.exam),
+    //   })
+    //     .populate({
+    //       path: "category",
+    //       select: "_id name",
+    //     })
+    //     .select([
+    //       "dateTimeStart",
+    //       "dateTimeEnd",
+    //       "duration",
+    //       "itemNumber",
+    //       "category",
+    //       "title",
+    //       "description",
+    //     ]);
+    //   let isContinue = false;
+    //   if (record) {
+    //     isContinue = record.isContinue;
+    //   }
+    //   if (exam !== null) {
+    //     const today = new Date();
+    //     const examStartDate = new Date(exam.dateTimeStart);
+    //     const examEndDate = new Date(exam.dateTimeEnd);
+    //     if (examStartDate < today && examEndDate > today) {
+    //       if (record) {
+    //         if (today - examEndDate < duration) {
+    //           res.status(401).send({
+    //             message: "Exam is Closed",
+    //             isContinue: false,
+    //             exam: exam,
+    //           });
+    //         } else {
+    //           res.status(200).send({
+    //             message: " Success",
+    //             isContinue: isContinue,
+    //             exam: exam,
+    //           });
+    //         }
+    //       } else {
+    //         res.status(200).send({
+    //           message: " Success",
+    //           isContinue: isContinue,
+    //           exam: exam,
+    //         });
+    //       }
+    //     } else {
+    //       res.status(401).send({
+    //         message: "Exam is Closed",
+    //         isContinue: isContinue,
+    //         exam: exam,
+    //       });
+    //     }
+    //   } else {
+    //     res.status(404).send({ message: "Exam not Found" });
+    //   }
+    // }
   } catch (error) {
     res.status(400).send({ message: "Error", error: error.message });
   }
