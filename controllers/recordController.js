@@ -2,7 +2,6 @@ const mongoose = require("mongoose");
 const Record = require("../schemas/recordSchema");
 const userSchema = require("../schemas/userSchema");
 const { attemptExamination } = require("../repositories/examRepository");
-const recordSchema = require("../schemas/recordSchema");
 
 const { ObjectId } = mongoose.Types;
 

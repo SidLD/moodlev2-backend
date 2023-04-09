@@ -79,17 +79,15 @@ const getExams = async (req, res) => {
           path: "category",
           select: "name _id",
         })
-        .populate({
-          path: "questions",
-          populate: {
-            path: "log.user",
-            select: "firstName lastName",
-          },
-        })
         .exec(async (err, data) => {
           if (err) {
             res.status(400).send({ message: "Error", err: err.message });
           } else {
+            data.forEach(d => {
+              data.questions = undefined
+            })
+            
+          console.log(data)
             res.status(200).send({ message: "Success", data: data });
           }
         });
@@ -254,6 +252,7 @@ const deleteExam = async (req, res) => {
 };
 
 const attemptExam = async (req, res) => {
+  console.log(req.body.exam)
   const params = req.body;
   Exam.findOne({ _id: params.exam })
     .populate({
@@ -305,6 +304,7 @@ const attemptExam = async (req, res) => {
             isContinue = false;
             await record.save();
           }
+          console.log(data)
           res.status(200).send({
             message: "Success",
             exam: data,
