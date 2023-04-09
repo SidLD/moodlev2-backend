@@ -40,7 +40,7 @@ const forecast =  async (req,res) => {
   
       let result = await getForecast(testData);
       
-      res.status(200).send({message: "Success", data: data})  
+      res.status(200).send({message: "Success", data: result})  
       }
     }
   })
