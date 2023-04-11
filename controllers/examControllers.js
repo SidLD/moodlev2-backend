@@ -252,7 +252,6 @@ const deleteExam = async (req, res) => {
 };
 
 const attemptExam = async (req, res) => {
-  console.log(req.body.exam)
   const params = req.body;
   Exam.findOne({ _id: params.exam })
     .populate({
@@ -336,14 +335,15 @@ const submitExam = async (req, res) => {
         const questions = data.exam.questions;
         const answers = data.answers;
         let score = 0;
+
+        //GuinCheck didi an question id sa record na questo
         answers.forEach((answer) => {
           questions.forEach((question) => {
-            if (answer.question && answer.question._id.equals(question._id)) {
-              if (answer.answer === question.answer) {
-                answer.isCorrect === true;
-                score++;
-              } else {
-                answer.isCorrect === false;
+            if (answer.question.equals(question._id)) {
+              question.choices.forEach(choice){
+                if(choices.choice === answer.answer){
+                  score += choice.grade;
+                }
               }
             }
           });

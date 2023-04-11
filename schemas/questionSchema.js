@@ -21,14 +21,11 @@ const questionSchema = mongoose.Schema(
       type: String,
       required: true,
     },
-    type: {
-      type: String,
-      enum: ["MultipleChoice", "FillInTheBlank", "TrueOrFalse"],
-    },
-    answer: {
-      type: String,
-    },
-    choices: [String],
+    choices: [{
+      chocie: String,
+      grade: Number,
+      feedback: String
+    }],
     log: [logSchema],
   },
   {

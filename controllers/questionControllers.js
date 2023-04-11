@@ -56,8 +56,6 @@ const createQuestion = async (req, res) => {
                 questionsParam.push(
                     {
                         choices : question.choices,
-                        type : question.type,
-                        answer: question.answer,
                         question: question.question,
                         exam : mongoose.Types.ObjectId(exam),
                         log : {
@@ -137,23 +135,18 @@ const updateQuestion = async (req, res) => {
             try {
                 const doChangeExam = params.exam === undefined ? "" : "Modified Exam Id, ";
                 const doChangeQuestion = params.question === undefined ? "" :"Modified Question, ";
-                const doChangeAnswer = params.answer === undefined ? "" : "Modified Answer, ";
                 const doChangeChoices = params.choices === undefined ? "" :"Modified Choices, ";
-                const doChangetype = params.type === undefined ? "" : "Modified type, ";
         
                 
-                console.log(params._id)
                 let question = await Question.findById(mongoose.Types.ObjectId(params._id));
         
                 question.exam = doChangeExam === "" ? mongoose.Types.ObjectId(question.exam) : mongoose.Types.ObjectId(params.exam)
                 question.question = doChangeQuestion === "" ? question.question : params.question;
-                question.answer = doChangeAnswer === "" ? question.answer : params.answer;
                 question.choices = doChangeChoices === "" ? question.choices : params.choices;
-                question.type = doChangetype === "" ? question.type : params.type;
 
                 question.log.push({
                     user: mongoose.Types.ObjectId(req.user.id),
-                    detail: doChangeAnswer + doChangeChoices + doChangeExam + doChangeQuestion + doChangetype
+                    detail: doChangeChoices + doChangeExam + doChangeQuestion 
                 })
                 await question.save(async (err, data) => { 
                     if(err) {
