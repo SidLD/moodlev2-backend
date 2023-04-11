@@ -37,7 +37,7 @@ const forecast =  async (req,res) => {
           score:d.score
         })
       });
-  
+      console.log("Test branch")
       let result = await getForecast(testData);
       
       res.status(200).send({message: "Success", data: result})  
