@@ -340,11 +340,11 @@ const submitExam = async (req, res) => {
         answers.forEach((answer) => {
           questions.forEach((question) => {
             if (answer.question.equals(question._id)) {
-              question.choices.forEach(choice){
-                if(choices.choice === answer.answer){
+              question.choices.forEach((choice) => {
+                if(choice.choice === answer.answer){
                   score += choice.grade;
                 }
-              }
+              })
             }
           });
         });
