@@ -40,7 +40,7 @@ const forecast =  async (req,res) => {
         total += d.score;
       });
   
-      const average = total / d.length;
+      const average = total / data.length;
       let result = await getForecast(testData);
       
       res.status(200).send({message: "Success", data: result, average: average})  

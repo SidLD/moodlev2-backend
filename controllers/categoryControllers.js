@@ -22,8 +22,10 @@ const getCategory =  async (req,res) => {
             .exec((err, data) => {
                 if (err) {
                     res.status(400).send({message: "Error", err: err.message})
+                    return;
                 }else{
                     res.status(200).send({message: "Success", data: data})
+                    return;
                 }
             });
     }else{
@@ -34,6 +36,7 @@ const getCategory =  async (req,res) => {
                     element.log = undefined   
                 });
                 res.status(200).send({message: "Success", data: data})
+                return;
             })
     }
 }
@@ -56,15 +59,19 @@ const createCategory = async (req,res) => {
             await newCategory.save( async (err, data)=>{
                 if(err){
                     res.status(400).send({message:"Error", error:err})
+                    return;
                 }else{
                     res.status(200).send({message:"Success", data: data})
+                    return;
                 }
             })
         } catch (error) {
             res.status(403).send({message:"Success", error: error})
+            return;
         }
     }else{
         res.status(400).send({message:"Access Denied"})
+        return;
     }
 }
 /***
@@ -80,6 +87,7 @@ const updateCategory  = async (req,res) => {
             .then(async (room) => {
                 if(room === null) {
                     res.status(400).send({message:"Category Does not exist"})
+                    return;
                 }
                 else {
                     room.name = params.name;
@@ -90,17 +98,21 @@ const updateCategory  = async (req,res) => {
                     await room.save(async (err, data) => {
                         if(err) {
                             res.status(400).send({message:"Error", error:err})
+                            return;
                         }else {
                             res.status(200).send({message:"Success", data: data})
+                            return;
                         }
                     })
                 }
             })
         } catch (error) {
             res.status(400).send({message:"Error", error:error})
+            return;
         }
     }else{
         res.status(400).send({message: "Access Denied"})
+        return;
     }
 }
 const deleteCategory =  async (req,res, next) => {
@@ -110,13 +122,16 @@ const deleteCategory =  async (req,res, next) => {
         .then(data => {
             if(data.deletedCount === 1){
                  res.status(200).send({message:"Success", deletedCount:data.deletedCount});
+                 return;
             }else{
-                res.status(400).send({message:"Fail", deletedCount:data.deletedCount});   
+                res.status(400).send({message:"Fail", deletedCount:data.deletedCount}); 
+                return;  
             }
         })
        
     }else{
          res.status(400).send({message: "Access Denied"})
+         return;
     }
 }
 

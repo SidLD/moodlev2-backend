@@ -4,7 +4,7 @@
         let bestMAE = 0.0;
         const numOfForecast = 2;
         for (let alpha = 0.1; alpha <= 1.0; alpha += 0.1) {
-            let forecastValues = forecastOne(data, alpha, 1);
+            let forecastValues = forecastOne(data, alpha, numOfForecast);
             let mae = calculateMae(data, forecastValues);
             if (mae < bestMAE) {
                 bestMAE = mae;
@@ -13,7 +13,6 @@
         }
         let finalForecast = forecastOne(data, bestAlpha, numOfForecast);
         const forecastedData = finalForecast[finalForecast.length -1 ];
-        console.log(finalForecast)
         return forecastedData;
     }
 
