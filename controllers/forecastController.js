@@ -31,15 +31,18 @@ const forecast =  async (req,res) => {
       res.status(200).send({message: "Forecast requires atleast more than 1 time data", data: data[0].student})  
     }
     else{
+      let total = 0;
       data.forEach(d => {
         testData.push({
           date: d.timeEnd,
           score:d.score
         })
+        total += d.score;
       });
+      const average = total/data.length;
       let result = await getForecast(testData);
       
-      res.status(200).send({message: "Success", data: result})  
+      res.status(200).send({message: "Success", data: result, average: average})  
       }
     }
   })
