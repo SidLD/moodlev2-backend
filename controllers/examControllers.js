@@ -237,38 +237,42 @@ const updateExam = async (req, res) => {
 
 const deleteExam = async (req, res) => {
   const params = req.body;
-  if (req.user.role === "admin" || req.user.role === "superadmin") {
-    await Exam.deleteOne({ _id: mongoose.Types.ObjectId(params.exam ) })
-      .then(async (data) => {
-        return await Question.deleteMany({ exam: mongoose.Types.ObjectId(params.exam )});
-      })
-      .then(async (doc) => {
-        if (doc.deletedCount > 0) {
-          res
-            .status(200)
-            .send({ message: "Success", deletedCount: doc.deletedCount });
-            return;
-        } else {
-          res
-            .status(400)
-            .send({ message: "Error", deletedCount: doc.deletedCount});
-            return;
-        }
-      })
-      .catch((err) => {
-        res.status(400).send({ message: "Error", error: err.message });
-        return;
-      });
-  } else {
-    res.status(401).send({ message: "Access Denied" });
-    return;
+  try {
+    if (req.user.role === "admin" || req.user.role === "superadmin") {
+      await Exam.deleteOne({ _id: mongoose.Types.ObjectId(params.exam ) })
+        .then(async (data) => {
+          return await Question.deleteMany({ exam: mongoose.Types.ObjectId(params.exam )});
+        })
+        .then(async (doc) => {
+          if (doc.deletedCount > 0) {
+            res
+              .status(200)
+              .send({ message: "Success", deletedCount: doc.deletedCount });
+              return;
+          } else {
+            res
+              .status(400)
+              .send({ message: "Error", deletedCount: doc.deletedCount});
+              return;
+          }
+        })
+        .catch((err) => {
+          res.status(400).send({ message: "Error", error: err.message });
+          return;
+        });
+    } else {
+      res.status(401).send({ message: "Access Denied" });
+      return;
+    }
+  } catch (error) {
+    res.status(500).send({message: "Error", err: error})
   }
 };
 
 const attemptExam = async (req, res) => {
-  console.log(req.body.exam)
   const params = req.body;
-  Exam.findOne({ _id: params.exam })
+  try {
+    Exam.findOne({ _id: params.exam })
     .populate({
       path: "questions",
       select: "question choices type",
@@ -333,11 +337,15 @@ const attemptExam = async (req, res) => {
         }
       }
     });
+  } catch (error) {
+    res.status(500).send({message: "Error", err: error})
+  }
 };
 
 const submitExam = async (req, res) => {
   const params = req.body;
-  Record.findById(mongoose.Types.ObjectId(params.record))
+  try {
+    Record.findById(mongoose.Types.ObjectId(params.record))
     .populate({
       path: "exam",
       populate: {
@@ -385,6 +393,9 @@ const submitExam = async (req, res) => {
         return;
       }
     });
+  } catch (error) {
+    res.status(500).send({message: "Error", err: error})
+  }
 };
 
 const fetchExamProgress = async (req, res) => {

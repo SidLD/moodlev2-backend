@@ -12,32 +12,36 @@ const Category = require("../schemas/categorySchema")
 const getCategory =  async (req,res) => {
     const params = req.query;
     //Dre dapat makita san student an log
-    if(req.user.role === 'admin' || req.user.role === 'superadmin'){
-        Category
-            .where(params)
-            .populate({
-                path: 'log.user',
-                select: 'firstName lastName'
-            })
-            .exec((err, data) => {
-                if (err) {
-                    res.status(400).send({message: "Error", err: err.message})
-                    return;
-                }else{
+    try {
+        if(req.user.role === 'admin' || req.user.role === 'superadmin'){
+            Category
+                .where(params)
+                .populate({
+                    path: 'log.user',
+                    select: 'firstName lastName'
+                })
+                .exec((err, data) => {
+                    if (err) {
+                        res.status(400).send({message: "Error", err: err.message})
+                        return;
+                    }else{
+                        res.status(200).send({message: "Success", data: data})
+                        return;
+                    }
+                });
+        }else{
+            await Category
+                .where(params)
+                .then(data => {
+                    data.forEach(element => {
+                        element.log = undefined   
+                    });
                     res.status(200).send({message: "Success", data: data})
                     return;
-                }
-            });
-    }else{
-        await Category
-            .where(params)
-            .then(data => {
-                data.forEach(element => {
-                    element.log = undefined   
-                });
-                res.status(200).send({message: "Success", data: data})
-                return;
-            })
+                })
+        }
+    } catch (error) {
+        res.status(500).send({message: "Error",  err: error})   
     }
 }
 /***
@@ -117,21 +121,25 @@ const updateCategory  = async (req,res) => {
 }
 const deleteCategory =  async (req,res, next) => {
     const category = req.body;
-    if(req.user.role === "admin" || req.user.role === "superadmin"){
-       await Category.deleteOne({_id:category._id})
-        .then(data => {
-            if(data.deletedCount === 1){
-                 res.status(200).send({message:"Success", deletedCount:data.deletedCount});
-                 return;
-            }else{
-                res.status(400).send({message:"Fail", deletedCount:data.deletedCount}); 
-                return;  
-            }
-        })
-       
-    }else{
-         res.status(400).send({message: "Access Denied"})
-         return;
+    try {
+        if(req.user.role === "admin" || req.user.role === "superadmin"){
+            await Category.deleteOne({_id:category._id})
+             .then(data => {
+                 if(data.deletedCount === 1){
+                      res.status(200).send({message:"Success", deletedCount:data.deletedCount});
+                      return;
+                 }else{
+                     res.status(400).send({message:"Fail", deletedCount:data.deletedCount}); 
+                     return;  
+                 }
+             })
+            
+         }else{
+              res.status(400).send({message: "Access Denied"})
+              return;
+         }
+    } catch (error) {
+        res.status(500).send({message: "Error", err: error})
     }
 }
 

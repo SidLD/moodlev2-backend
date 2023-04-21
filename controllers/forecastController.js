@@ -12,6 +12,7 @@ const { ObjectId } = mongoose.Types;
 
 
 const forecast =  async (req,res) => {
+ try {
   Record.where({ student: ObjectId(req.query.studentId), isComplete: true})
   .populate({
     path: "student",
@@ -47,6 +48,9 @@ const forecast =  async (req,res) => {
       }
     }
   })
+ } catch (error) {
+  res.status(500).send({message: "Error", err: error})
+ }
     
 }
 exports.forecast = forecast;

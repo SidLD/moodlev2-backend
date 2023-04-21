@@ -8,7 +8,8 @@ const { ObjectId } = mongoose.Types;
 //magamit didi _id para sa record._id
 const getRecord = async (req, res) => {
   const params = req.query;
-  Record.where(params)
+  try {
+    Record.where(params)
     .populate({
       path: "exam",
       select: "_id dateTimeStart dateTimeEnd duration itemNumer category",
@@ -49,6 +50,9 @@ const getRecord = async (req, res) => {
         res.status(400).send({ message: "Error", error: error.message });
       }
     });
+  } catch (error) {
+    res.status(500).send({message: "Error", err:error})
+  }
 };
 
 //Pag add la ine san question/answers
@@ -85,15 +89,19 @@ const updateRecord = async (req, res) => {
 
 const deleteRecord = async (req, res) => {
   const params = req.body;
-  let record = await Record.findOne({
-    exam: ObjectId(params.exam),
-    student: ObjectId(req.user.id),
-  });
-  if (record) {
-    await record.deleteOne({ _id: ObjectId(record._id) });
-    res.status(201).send({ message: "Success", record: record });
-  } else {
-    res.status(400).send({ message: "Record Not Found" });
+  try {
+    let record = await Record.findOne({
+      exam: ObjectId(params.exam),
+      student: ObjectId(req.user.id),
+    });
+    if (record) {
+      await record.deleteOne({ _id: ObjectId(record._id) });
+      res.status(201).send({ message: "Success", record: record });
+    } else {
+      res.status(400).send({ message: "Record Not Found" });
+    }
+  } catch (error) {
+    res.status(500).send({message:"Error", err:error})
   }
 };
 

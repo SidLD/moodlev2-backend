@@ -26,8 +26,10 @@ const { ObjectId } = mongoose.Types;
  */
 const register = async (req, res) => {
   const params = req.body;
-  const schoolId = await User.findOne({ schoolId: params.schoolId });
-  if (schoolId) {
+  try {
+    const schoolId = await User.findOne({ schoolId: params.schoolId });
+  const email = await User.findOne({email: params.email});
+  if (schoolId && email) {
     res.status(401).send({ message: "User already Exist" });
   } else {
     try {
@@ -66,89 +68,100 @@ const register = async (req, res) => {
       res.status(400).send({ message: "Error", error: err });
     }
   }
+  } catch (error) {
+    res.status(500).send({message: "Error", err:error}) 
+  }
 };
 const login = async (req, res) => {
   const userLoggingIn = req.body;
-  console.log(req.body);
-  User.findOne({ schoolId: userLoggingIn.schoolId }).then((dbUser) => {
-    if (!dbUser) {
-      res.status(401).send({ message: "Incorrect schoolId or Password" });
-    } else {
-      bcrypt
-        .compare(userLoggingIn.password, dbUser.password)
-        .then((isMatch) => {
-          console.log(isMatch);
-          if (isMatch) {
-            if (dbUser.status === "approved") {
-              const payload = {
-                id: dbUser._id,
-                firstName: dbUser.firstName,
-                middleName: dbUser.middleName,
-                lastName: dbUser.lastName,
-                role: dbUser.role,
-                gender: dbUser.gender,
-                status: dbUser.status,
-                age: dbUser.age,
-                schoolId: dbUser.schoolId,
-              };
-              jwt.sign(
-                payload,
-                process.env.JWT_SECRET,
-                { expiresIn: 86400 },
-                (err, token) => {
-                  if (err) {
-                    res.send({ message: err });
-                  } else {
-                    res.status(201).send({
-                      message: "Success",
-                      token: "Bearer " + token,
-                    });
+  try {
+    User.findOne({ schoolId: userLoggingIn.schoolId }).then((dbUser) => {
+      if (!dbUser) {
+        res.status(401).send({ message: "Incorrect schoolId or Password" });
+      } else {
+        bcrypt
+          .compare(userLoggingIn.password, dbUser.password)
+          .then((isMatch) => {
+            console.log(isMatch);
+            if (isMatch) {
+              if (dbUser.status === "approved") {
+                const payload = {
+                  id: dbUser._id,
+                  firstName: dbUser.firstName,
+                  middleName: dbUser.middleName,
+                  lastName: dbUser.lastName,
+                  role: dbUser.role,
+                  gender: dbUser.gender,
+                  status: dbUser.status,
+                  age: dbUser.age,
+                  schoolId: dbUser.schoolId,
+                };
+                jwt.sign(
+                  payload,
+                  process.env.JWT_SECRET,
+                  { expiresIn: 86400 },
+                  (err, token) => {
+                    if (err) {
+                      res.send({ message: err });
+                    } else {
+                      res.status(201).send({
+                        message: "Success",
+                        token: "Bearer " + token,
+                      });
+                    }
                   }
-                }
-              );
+                );
+              } else {
+                res.status(401).send({ message: "User not Aprroved" });
+              }
             } else {
-              res.status(401).send({ message: "User not Aprroved" });
+              res.status(401).send({ message: "Invalid schoolId or Password" });
             }
-          } else {
-            res.status(401).send({ message: "Invalid schoolId or Password" });
-          }
-        })
-        .catch((err) => {
-          res
-            .status(401)
-            .send({ message: "Invalid schoolId or Password", error: err });
-        });
-    }
-  });
+          })
+          .catch((err) => {
+            res
+              .status(401)
+              .send({ message: "Invalid schoolId or Password", error: err });
+          });
+      }
+    });
+  } catch (error) {
+    res.status(500).send({message: "Error", err: error})
+  }
 };
 const getUser = async (req, res, next) => {
   const userToGet = req.query;
-  if (req.user.role === "admin" || req.user.role === "superadmin") {
-    User.where(userToGet)
-      .populate({
-        path: "log.user",
-        select: "firstname lastName",
-      })
-      .exec(async (err, data) => {
-        if (err) {
-          res.status(400).send({ message: "Error", error: err.message });
-        } else {
-          data.forEach((element) => {
-            element.password = undefined;
-          });
-          res.status(200).send({ message: "Success", data: data });
-        }
-      });
-  } else {
-    await User.where(userToGet)
-      .select(["firstName", "lastName"])
-      .then((data) => {
-        res.status(201).send({ message: "Success", data: data });
-      });
+  try {
+    if (req.user.role === "admin" || req.user.role === "superadmin") {
+      User.where(userToGet)
+        .populate({
+          path: "log.user",
+          select: "firstname lastName",
+        })
+        .exec(async (err, data) => {
+          if (err) {
+            res.status(400).send({ message: "Error", error: err.message });
+          } else {
+            data.forEach((element) => {
+              element.password = undefined;
+            });
+            res.status(200).send({ message: "Success", data: data });
+          }
+        });
+    } else {
+      await User.where(userToGet)
+        .select(["firstName", "lastName"])
+        .then((data) => {
+          res.status(201).send({ message: "Success", data: data });
+        });
+    }
+  } catch (error) {
+    res.status(500).send({message: "Error", err:error})
   }
 };
 const updateUser = async (req, res, next) => {
-  const userToBeUpdate = req.body;
+  try {
+    const userToBeUpdate = req.body;
   //para ine makita kun nanu an guinBago
   const doChangeschoolId =
     userToBeUpdate.schoolId === undefined ? "" : "Update schoolId, ";
@@ -267,11 +280,15 @@ const updateUser = async (req, res, next) => {
       }
     });
   }
+  } catch (error) {
+   res.status(500).send({message: "Error", err:error}) 
+  }
 };
 
 const deleteUser = async (req, res, next) => {
   const params = req.body;
-  let user = await User.findOne({ _id: mongoose.Types.ObjectId(params._id) });
+  try {
+    let user = await User.findOne({ _id: mongoose.Types.ObjectId(params._id) });
   //   console.log(user);
   let havePermission = false;
   if (!user) {
@@ -302,6 +319,9 @@ const deleteUser = async (req, res, next) => {
     }
   } else {
     res.status(401).json({ message: "Access Denied" });
+  }
+  } catch (error) {
+   res.status(500).send({message: "Error", err : error}) 
   }
 };
 const getNotifications = async (req, res) => {
