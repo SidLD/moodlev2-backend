@@ -76,8 +76,9 @@ const login = async (req, res) => {
   const userLoggingIn = req.body;
   try {
     User.findOne({ schoolId: userLoggingIn.schoolId }).then((dbUser) => {
-      if (!dbUser) {
-        res.status(401).send({ message: "Incorrect schoolId or Password" });
+      console.log(dbUser)
+      if (dbUser == null) {
+        return res.status(401).send({ message: "Incorrect School Id or Password" });
       } else {
         bcrypt
           .compare(userLoggingIn.password, dbUser.password)
@@ -112,14 +113,14 @@ const login = async (req, res) => {
                   }
                 );
               } else {
-                res.status(401).send({ message: "User not Aprroved" });
+               return res.status(400).send({ message: "User not Aprroved" });
               }
             } else {
-              res.status(401).send({ message: "Invalid schoolId or Password" });
+              return res.status(400).send({ message: "Invalid schoolId or Password" });
             }
           })
           .catch((err) => {
-            res
+            return res
               .status(401)
               .send({ message: "Invalid schoolId or Password", error: err });
           });
@@ -347,9 +348,9 @@ const approveUser = async (req, res) => {
           status: "approved",
         }
       );
-      res.status(200).send({ message: "User approved successfully" });
+      return res.status(200).send({ message: "User approved successfully" });
     } else {
-      res.status(401).send({ message: "User approval denied" });
+      return res.status(401).send({ message: "User approval denied" });
     }
   } catch (error) {
     console.log("USER APPROVAL ERR: ", error);

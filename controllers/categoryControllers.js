@@ -53,22 +53,29 @@ const createCategory = async (req,res) => {
     const params = req.body;
     if(req.user.role === "admin" || req.user.role === "superadmin"){
         try {
+            
             const newCategory = new Category({
-                name: params.name
+                name: params.name,
+                image : {
+                    data : params.img,
+                    contentType: "image/png"
+                }
             })
             newCategory.log.push({
                 user:  mongoose.Types.ObjectId(req.user.id),
                 detail: "Created "+params.name
             })
-            await newCategory.save( async (err, data)=>{
-                if(err){
-                    res.status(400).send({message:"Error", error:err})
-                    return;
-                }else{
-                    res.status(200).send({message:"Success", data: data})
-                    return;
-                }
-            })
+            // await newCategory.save( async (err, data)=>{
+            //     if(err){
+            //         res.status(400).send({message:"Error", error:err})
+            //         return;
+            //     }else{
+            //         res.status(200).send({message:"Success", data: data})
+            //         return;
+            //     }
+            // })
+            const data = params.img['$ngfDataUrl'];
+            res.status(200).send({message:"Success", data: newCategory.data});
         } catch (error) {
             res.status(403).send({message:"Success", error: error})
             return;

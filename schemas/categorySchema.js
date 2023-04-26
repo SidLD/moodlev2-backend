@@ -7,6 +7,10 @@ const logSchema = mongoose.Schema(
       ref: "User",
     },
     detail: String,
+    image: { 
+      data: Buffer, 
+      contentType: String 
+    },
   },
   { timestamps: true }
 );

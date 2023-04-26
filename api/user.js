@@ -22,7 +22,7 @@ app.post("/login", login);
 app.get("/user", verifyToken, getUser);
 app.put("/user", verifyToken, updateUser);
 app.delete("/user", verifyToken, deleteUser);
-app.post("/approveUser", verifyToken, approveUser);
+app.put("/approveUser", verifyToken, approveUser);
 
 app.get("/notifications", verifyToken, getNotifications);
 app.delete("/rejectAllUsers", verifyToken, rejectAllUsers);
