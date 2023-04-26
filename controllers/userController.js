@@ -28,8 +28,7 @@ const register = async (req, res) => {
   const params = req.body;
   try {
     const schoolId = await User.findOne({ schoolId: params.schoolId });
-  const email = await User.findOne({email: params.email});
-  if (schoolId && email) {
+  if (schoolId) {
     res.status(401).send({ message: "User already Exist" });
   } else {
     try {
