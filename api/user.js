@@ -15,6 +15,7 @@ const {
   rejectAllUsers,
   approveAllUser,
   fetchAllStudents,
+  changePassword,
 } = require("../controllers/userController");
 
 app.post("/register", register);
@@ -28,5 +29,6 @@ app.get("/notifications", verifyToken, getNotifications);
 app.delete("/rejectAllUsers", verifyToken, rejectAllUsers);
 app.put("/approveAllUsers", verifyToken, approveAllUser);
 app.get("/fetchAllStudents", verifyToken, fetchAllStudents);
+app.post("/changePassword", changePassword)
 
 module.exports = app;

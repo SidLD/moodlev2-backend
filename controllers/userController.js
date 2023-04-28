@@ -75,7 +75,7 @@ const login = async (req, res) => {
   const userLoggingIn = req.body;
   try {
     User.findOne({ schoolId: userLoggingIn.schoolId }).then((dbUser) => {
-      console.log(dbUser)
+      console.log(userLoggingIn)
       if (dbUser == null) {
         return res.status(401).send({ message: "Incorrect School Id or Password" });
       } else {
@@ -397,6 +397,23 @@ const fetchAllStudents = async (req, res) => {
     res.status(400).send({ message: "Something went wrong", err: error });
   }
 };
+const changePassword = async (req, res) => {
+  try {
+    const params = req.body;
+    const user = await User.findOne({email: params.email, schoolId: params.schoolId});
+    if(!user){
+      return res.status(400).send({message: "User not found"});
+    }else{
+      const hashedPassword = await bcrypt.hash(params.password, 10);
+      user.password = hashedPassword;
+      await user.save();
+      return res.status(200).send({message: "Success"})  
+    }
+  } catch (error) {
+    res.status(400).send({ message: "Something went wrong", err: error });
+  }
+};
+
 
 exports.register = register;
 exports.login = login;
@@ -409,3 +426,4 @@ exports.getNotifications = getNotifications;
 exports.rejectAllUsers = rejectAllUsers;
 exports.approveAllUser = approveAllUser;
 exports.fetchAllStudents = fetchAllStudents;
+exports.changePassword = changePassword;
