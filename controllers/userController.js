@@ -380,8 +380,17 @@ const approveAllUser = async (req, res) => {
 const rejectAllUsers = async (req, res) => {
   try {
     if (req.user.role === "admin" || req.user.role == "superadmin") {
-      await User.deleteMany({ status: "pending" });
-      res.status(200).send({ message: "All users rejected successfully" });
+      await User.updateMany(
+        {
+          status: "pending",
+        },
+        {
+          $set: {
+            status: "rejected",
+          },
+        }
+      );
+      return res.status(200).send({ message: "All users rejected successfully" });
     } else {
       res.status(401).send({ message: "Access Denied" });
     }
@@ -389,12 +398,33 @@ const rejectAllUsers = async (req, res) => {
     res.status(400).send({ message: "Something went wrong", err: error });
   }
 };
+
 const fetchAllStudents = async (req, res) => {
   try {
     const records = await fetchStudentRecords();
     res.status(200).send({ message: "Success", data: records });
   } catch (error) {
     res.status(400).send({ message: "Something went wrong", err: error });
+  }
+};
+
+const fetchRejectedStudents = async (req, res) => {
+  try {
+      const users = await User.where({status: "rejected"});
+      return res.status(200).send({ message: "Success", data: users });
+    
+  } catch (error) {
+    return res.status(400).send({ message: "Something went wrong", err: error });
+  }
+};
+
+const fetchPendingStudents = async (req, res) => {
+  try {
+      const users = await User.where({status: "pending"});
+      return res.status(200).send({ message: "Success", data: users });
+    
+  } catch (error) {
+    return res.status(400).send({ message: "Something went wrong", err: error });
   }
 };
 const changePassword = async (req, res) => {
@@ -421,6 +451,8 @@ exports.updateUser = updateUser;
 exports.deleteUser = deleteUser;
 exports.getUser = getUser;
 
+exports.fetchPendingStudents = fetchPendingStudents;
+exports.fetchRejectedStudents = fetchRejectedStudents;
 exports.approveUser = approveUser;
 exports.getNotifications = getNotifications;
 exports.rejectAllUsers = rejectAllUsers;

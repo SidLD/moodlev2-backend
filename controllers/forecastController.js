@@ -3,6 +3,7 @@ const {
   getForecast
   } = require("../Utilities/Forecast");
 
+const User = require("../schemas/userSchema");
 const mongoose = require("mongoose");
 const Record = require("../schemas/recordSchema");
 const { ObjectId } = mongoose.Types;
@@ -71,10 +72,62 @@ const forecast =  async (req,res) => {
 
 const getPassingRate =  async (req,res) => {
   try {
+    const users = await User.find({role: "student", status: "approved"})
+    let result = {
+        passedStudent : [],
+        failedStudent : []      
+    }
+    const passingPercentage = 4;
+    let rates = []; 
+     
     
+
+    for(const user of users){
+      const records = await Record.where({ student: ObjectId(user._id), isComplete: true})
+      .populate({
+        path: "student",
+        select: "_id firstName lastName schoolId",
+      })
+      .populate({
+        path: "timeEnd score",
+      })
+      .exec().then( async (docs) => docs);
+      let scores = []
+      records.forEach(d => {
+        scores.push(d.score)
+      })
+      const passingScores = scores.filter(score => score >= passingPercentage);
+      const passingResult = (passingScores.length / scores.length) * 100; 
+
+         if(passingResult > 85){
+           result.passedStudent.push(
+             {
+               firstName: user.firstName,
+               lastName: user.lastName,
+               schoolId: user.schoolId,
+               passingRate: passingResult
+             }
+           )
+         rates.push(passingResult)
+         }else if(passingResult < 85){ 
+           result.failedStudent.push(
+             {
+               firstName: user.firstName,
+               lastName: user.lastName,
+               schoolId: user.schoolId,
+               passingRate: passingResult
+             }
+           )
+
+           rates.push(passingResult)
+         }
+    }
+    console.log(1)
+    return res.status(200).send({message: "Success", data: result, rate: rates})  
   } catch (error) {
     return res.status(500).send({message: "Error", err: error})
   }  
 }
 
+exports.getPassingRate = getPassingRate;
 exports.forecast = forecast;

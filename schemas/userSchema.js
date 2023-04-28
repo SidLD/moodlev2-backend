@@ -54,7 +54,7 @@ const userSchema = mongoose.Schema(
       default: "pending",
       trim: true,
       required: true,
-      enum: ["pending", "approved"],
+      enum: ["pending", "approved", "rejected"],
     },
     log: [logSchema],
   },

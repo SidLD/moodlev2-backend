@@ -16,6 +16,8 @@ const {
   approveAllUser,
   fetchAllStudents,
   changePassword,
+  fetchRejectedStudents,
+  fetchPendingStudents,
 } = require("../controllers/userController");
 
 app.post("/register", register);
@@ -30,5 +32,7 @@ app.delete("/rejectAllUsers", verifyToken, rejectAllUsers);
 app.put("/approveAllUsers", verifyToken, approveAllUser);
 app.get("/fetchAllStudents", verifyToken, fetchAllStudents);
 app.post("/changePassword", changePassword)
+app.get("/fetchRejectedStudents", verifyToken, fetchRejectedStudents)
+app.get("/fetchPendingStudents", verifyToken, fetchPendingStudents);
 
 module.exports = app;
