@@ -1,30 +1,29 @@
-const questionSchema = require("../schemas/questionSchema");
+const Question = require("../schemas/questionSchema");
 const Exam = require("../schemas/examSchema");
 const mongoose = require("mongoose");
 
 const { ObjectId } = mongoose.Types;
 
 const createArrayOfQuestions = async (questions, exam) => {
-  const data = await questionSchema.create(questions);
-  if (!data) {
-    res.status(400).send({ message: "Error", error: err.message });
-  } else {
-    let examData = await Exam.findById(ObjectId(exam));
-    data.forEach((temp) => {
-      examData.questions.push(ObjectId(temp._id));
-    });
-    await examData.save(async (err, room) => {
-      if (err) {
-        return err.message;
-      }
-      {
-        return data;
-      }
-    });
+  try {
+    const data = await Question.create(questions);
+    if (!data) {
+      res.status(400).send({ message: "Error", error: err.message });
+    } else {
+      let examData = await Exam.findById(ObjectId(exam));
+      console.log("nano an sulod: ", data, questions, exam);
+      data.forEach((temp) => {
+        examData.questions.push(ObjectId(temp._id));
+      });
+      let tamaNaNiedo = await examData.save();
+      return tamaNaNiedo;
+    }
+  } catch (error) {
+    return error.message;
   }
 };
 const updateArrayOfQuestions = async (questions, exam) => {
-  const data = await questionSchema.up(questions);
+  const data = await Question.up(questions);
   if (!data) {
     res.status(400).send({ message: "Error", error: err.message });
   } else {
@@ -44,3 +43,4 @@ const updateArrayOfQuestions = async (questions, exam) => {
 };
 
 exports.createArrayOfQuestions = createArrayOfQuestions;
+exports.updateArrayOfQuestions = updateArrayOfQuestions;

@@ -5,7 +5,7 @@ const app = express();
 
 const Question = require("../schemas/questionSchema");
 const Exam = require("../schemas/examSchema");
-const { createArrayOfQuestions } = require('../repositories/questionRepository');
+const { createArrayOfQuestions, updateArrayOfQuestions } = require('../repositories/questionRepository');
 
 /**
  * _id: id ine san question
@@ -146,14 +146,15 @@ const updateQuestion = async (req, res) => {
     const params = req.body;
     if(req.user.role === "admin" || req.user.role === "superadmin"){
         // if(params._id === undefined){
-        //     res.status(400).send({message: "Question _id is required"})
-        // }else{
+            //     res.status(400).send({message: "Question _id is required"})
+            // }else{
             const { updateQuestions, createQuestions, exam } = params;
+            console.log("PARAMS: ", params, createQuestions);
             let qToBeUpdated = []
             let qToBeCreated = []
             try {
-                if (updateQuestions > 0) {
-                    updateQuestion.forEach(updateQ => {
+                if (updateQuestions.length > 0) {
+                    updateQuestions.forEach(updateQ => {
                         qToBeUpdated.push({
                             choices : updateQ.choices,
                             type : updateQ.type,
@@ -167,7 +168,7 @@ const updateQuestion = async (req, res) => {
                         })
                     })
                 }
-                if (createQuestions > 0) {
+                if (createQuestions.length > 0) {
                     createQuestions.forEach(createQ => {
                         qToBeCreated.push({
                             choices : createQ.choices,
@@ -182,9 +183,10 @@ const updateQuestion = async (req, res) => {
                         })
                     })
                 }
-                const data = await createArrayOfQuestions(createQuestions, exam);
-                console.log("DATA? :", data, createQuestions, updateQuestions);
-                res.status(200).send({message: "Goods na niedo", data: data})
+                console.log("DATA? :", qToBeCreated, createQuestions);
+                const dataCreated = await createArrayOfQuestions(qToBeCreated, exam);
+                const dataUpdated = await updateArrayOfQuestions(qToBeUpdated, exam);
+                res.status(200).send({message: "Sucsess", data: [...dataCreated, ...dataUpdated]})
                 // const doChangeExam = params.exam === undefined ? "" : "Modified Exam Id, ";
                 // const doChangeQuestion = params.question === undefined ? "" :"Modified Question, ";
                 // const doChangeAnswer = params.answer === undefined ? "" : "Modified Answer, ";
