@@ -144,45 +144,59 @@ const updateQuestion = async (req, res) => {
    try {
     const params = req.body;
     if(req.user.role === "admin" || req.user.role === "superadmin"){
-        if(params._id === undefined){
-            res.status(400).send({message: "Question _id is required"})
-        }else{
+        // if(params._id === undefined){
+        //     res.status(400).send({message: "Question _id is required"})
+        // }else{
+            const { questions } = params;
+            ids = questions.id;
+            delete questions.id
             try {
-                const doChangeExam = params.exam === undefined ? "" : "Modified Exam Id, ";
-                const doChangeQuestion = params.question === undefined ? "" :"Modified Question, ";
-                const doChangeAnswer = params.answer === undefined ? "" : "Modified Answer, ";
-                const doChangeChoices = params.choices === undefined ? "" :"Modified Choices, ";
-                const doChangetype = params.type === undefined ? "" : "Modified type, ";
+                await Question.updateMany(
+                    {
+                        _id: {
+                            $in: ids
+                        }
+                    },
+                    {
+                        $set: questions,
+                    }
+                )
+                res.status(200).send({message: "Goods"})
+                // const doChangeExam = params.exam === undefined ? "" : "Modified Exam Id, ";
+                // const doChangeQuestion = params.question === undefined ? "" :"Modified Question, ";
+                // const doChangeAnswer = params.answer === undefined ? "" : "Modified Answer, ";
+                // const doChangeChoices = params.choices === undefined ? "" :"Modified Choices, ";
+                // const doChangetype = params.type === undefined ? "" : "Modified type, ";
         
                 
-                console.log(params._id)
-                let question = await Question.findById(mongoose.Types.ObjectId(params._id));
+                // console.log(params._id)
+                // let question = await Question.findById(mongoose.Types.ObjectId(params._id));
         
-                question.exam = doChangeExam === "" ? mongoose.Types.ObjectId(question.exam) : mongoose.Types.ObjectId(params.exam)
-                question.question = doChangeQuestion === "" ? question.question : params.question;
-                question.answer = doChangeAnswer === "" ? question.answer : params.answer;
-                question.choices = doChangeChoices === "" ? question.choices : params.choices;
-                question.type = doChangetype === "" ? question.type : params.type;
+                // question.exam = doChangeExam === "" ? mongoose.Types.ObjectId(question.exam) : mongoose.Types.ObjectId(params.exam)
+                // question.question = doChangeQuestion === "" ? question.question : params.question;
+                // question.answer = doChangeAnswer === "" ? question.answer : params.answer;
+                // question.choices = doChangeChoices === "" ? question.choices : params.choices;
+                // question.type = doChangetype === "" ? question.type : params.type;
 
-                question.log.push({
-                    user: mongoose.Types.ObjectId(req.user.id),
-                    detail: doChangeAnswer + doChangeChoices + doChangeExam + doChangeQuestion + doChangetype
-                })
-                await question.save(async (err, data) => { 
-                    if(err) {
-                         res.status(400).send({message:"Error", error:err.message})
-                    }
-                    else{
-                        res.status(200).send({message:"Success", data: data})
-                    }
-                })
+                // question.log.push({
+                //     user: mongoose.Types.ObjectId(req.user.id),
+                //     detail: doChangeAnswer + doChangeChoices + doChangeExam + doChangeQuestion + doChangetype
+                // })
+                // await question.save(async (err, data) => { 
+                //     if(err) {
+                //          res.status(400).send({message:"Error", error:err.message})
+                //     }
+                //     else{
+                //         res.status(200).send({message:"Success", data: data})
+                //     }
+                // })
             } catch (error) {
-                res.status(400).send({message: "Error", error: error.message})
+                return res.status(400).send({message: "Error", error: error.message})
             }
-        }
+        // }
     }
     else{
-        res.status(401).send({message: "Access Denied"})
+        return res.status(401).send({message: "Access Denied"})
     }
    } catch (error) {
         res.status(500).send({message: "Error", err: error})

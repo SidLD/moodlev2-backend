@@ -5,6 +5,7 @@ const mongoose = require("mongoose");
 const { attemptExamination } = require("../repositories/examRepository");
 const userSchema = require("../schemas/userSchema");
 
+const { ObjectId } = mongoose.Types;
 /**
  *     ****** Structure *****
     exam: id / _id
@@ -74,28 +75,28 @@ const getExams = async (req, res) => {
   const params = req.query;
   try {
     // if (req.user.role === "admin" || req.user.role === "superadmin") {
-      Exam.where(params)
-        .populate({
-          path: "log.user",
-          select: "firstName lastName",
-        })
-        .populate({
-          path: "category",
-          select: "name _id",
-        })
-        .exec(async (err, data) => {
-          if (err) {
-            res.status(400).send({ message: "Error", err: err.message });
-            return;
-          } else {
-            // data.forEach(d => {
-            //   data.questions = undefined
-            // })
-            
-            res.status(200).send({ message: "Success", data: data });
-            return;
-          }
-        });
+    Exam.where(params)
+      .populate({
+        path: "log.user",
+        select: "firstName lastName",
+      })
+      .populate({
+        path: "category",
+        select: "name _id",
+      })
+      .exec(async (err, data) => {
+        if (err) {
+          res.status(400).send({ message: "Error", err: err.message });
+          return;
+        } else {
+          // data.forEach(d => {
+          //   data.questions = undefined
+          // })
+
+          res.status(200).send({ message: "Success", data: data });
+          return;
+        }
+      });
     // } else {
     //   let record = await Record.findOne({
     //     exam: mongoose.Types.ObjectId(params.exam),
@@ -169,61 +170,76 @@ const updateExam = async (req, res) => {
   const params = req.body;
   if (req.user.role === "admin" || req.user.role === "superadmin") {
     try {
-      await Exam.findOne({ _id: mongoose.Types.ObjectId(params.exam) }).then(
-        async (exam) => {
-          const doChangeDateTimeStart =
-            params.dateTimeStart === undefined ? "" : "Modified Date Start, ";
-          const doChangeDateTimeEnd =
-            params.dateTimeEnd === undefined ? "" : "Modified End, ";
-          const doChangeCategory =
-            params.category === undefined ? "" : "Modified Category, ";
-          const doChangeDuration =
-            params.duration === undefined ? "" : "Modified Duration, ";
-          const doChangeItemNumber =
-            params.itemNumber === undefined ? "" : "Modified Item number, ";
+      let dataToUpdate = {
+        category: params.category,
+        dateTimeEnd: params.dateTimeEnd,
+        dateTimeStart: params.dateTimeStart,
+        description: params.description,
+        duration: params.duration,
+        itemNumber: params.itemNumber,
+        title: params.title,
+      }
+      const examData = await Exam.updateOne(
+      { _id: params.exam},
+      { $set: dataToUpdate },
+      { upsert: true }
+      )
+      res.status(200).send({message: "Success", data: examData})
+      // await Exam.findOne({ _id: mongoose.Types.ObjectId(params.exam) }).then(
+      //   async (exam) => {
+      //     const doChangeDateTimeStart =
+      //       params.dateTimeStart === undefined ? "" : "Modified Date Start, ";
+      //     const doChangeDateTimeEnd =
+      //       params.dateTimeEnd === undefined ? "" : "Modified End, ";
+      //     const doChangeCategory =
+      //       params.category === undefined ? "" : "Modified Category, ";
+      //     const doChangeDuration =
+      //       params.duration === undefined ? "" : "Modified Duration, ";
+      //     const doChangeItemNumber =
+      //       params.itemNumber === undefined ? "" : "Modified Item number, ";
 
-          exam.dateTimeStart =
-            doChangeDateTimeStart === ""
-              ? new Date(exam.dateTimeStart)
-              : new Date(params.dateTimeStart);
-          exam.dateTimeEnd =
-            doChangeDateTimeEnd === ""
-              ? new Date(exam.dateTimeEnd)
-              : new Date(params.dateTimeEnd);
-          exam.duration =
-            doChangeDuration === "" ? exam.duration : params.duration;
-          exam.itemNumber =
-            doChangeItemNumber === "" ? exam.itemNumber : params.itemNumber;
-          exam.category =
-            doChangeCategory === ""
-              ? mongoose.Types.ObjectId(exam.category)
-              : mongoose.Types.ObjectId(params.category);
+      //     exam.dateTimeStart =
+      //       doChangeDateTimeStart === ""
+      //         ? new Date(exam.dateTimeStart)
+      //         : new Date(params.dateTimeStart);
+      //     exam.dateTimeEnd =
+      //       doChangeDateTimeEnd === ""
+      //         ? new Date(exam.dateTimeEnd)
+      //         : new Date(params.dateTimeEnd);
+      //     exam.duration =
+      //       doChangeDuration === "" ? exam.duration : params.duration;
+      //     exam.itemNumber =
+      //       doChangeItemNumber === "" ? exam.itemNumber : params.itemNumber;
+      //     exam.category =
+      //       doChangeCategory === ""
+      //         ? mongoose.Types.ObjectId(exam.category)
+      //         : mongoose.Types.ObjectId(params.category);
 
-          if (exam.dateTimeStart > exam.dateTimeEnd) {
-            res.status(400).send({ message: "Invalid Time" });
-            return;
-          }
-
-          exam.log.push({
-            user: mongoose.Types.ObjectId(req.user.id),
-            detail:
-              doChangeDateTimeStart +
-              doChangeDateTimeEnd +
-              doChangeCategory +
-              doChangeDuration +
-              doChangeItemNumber,
-          });
-          await exam.save(async (err, data) => {
-            if (err) {
-              res.status(400).send({ message: "Error", error: err.message });
-              return;
-            } else {
-              res.status(200).send({ message: "Success", data: data });
-              return;
-            }
-          });
-        }
-      );
+      //     if (exam.dateTimeStart > exam.dateTimeEnd) {
+      //       res.status(400).send({ message: "Invalid Time" });
+      //       return;
+      //     }
+      //     exam.log.push({
+      //       user: mongoose.Types.ObjectId(req.user.id),
+      //       detail:
+      //         doChangeDateTimeStart +
+      //         doChangeDateTimeEnd +
+      //         doChangeCategory +
+      //         doChangeDuration +
+      //         doChangeItemNumber,
+      //     });
+      //     await exam.save(async (err, data) => {
+      //       if (err) {
+      //         console.log("ERR? ", err);
+      //         res.status(400).send({ message: "Error", error: err.message });
+      //         return;
+      //       } else {
+      //         res.status(200).send({ message: "Success", data: data });
+      //         return;
+      //       }
+      //     });
+      //   }
+      // );
     } catch (error) {
       return res
         .status(400)
@@ -239,21 +255,23 @@ const deleteExam = async (req, res) => {
   const params = req.body;
   try {
     if (req.user.role === "admin" || req.user.role === "superadmin") {
-      await Exam.deleteOne({ _id: mongoose.Types.ObjectId(params.exam ) })
+      await Exam.deleteOne({ _id: mongoose.Types.ObjectId(params.exam) })
         .then(async (data) => {
-          return await Question.deleteMany({ exam: mongoose.Types.ObjectId(params.exam )});
+          return await Question.deleteMany({
+            exam: mongoose.Types.ObjectId(params.exam),
+          });
         })
         .then(async (doc) => {
           if (doc.deletedCount > 0) {
             res
               .status(200)
               .send({ message: "Success", deletedCount: doc.deletedCount });
-              return;
+            return;
           } else {
             res
               .status(400)
-              .send({ message: "Error", deletedCount: doc.deletedCount});
-              return;
+              .send({ message: "Error", deletedCount: doc.deletedCount });
+            return;
           }
         })
         .catch((err) => {
@@ -265,7 +283,7 @@ const deleteExam = async (req, res) => {
       return;
     }
   } catch (error) {
-    res.status(500).send({message: "Error", err: error})
+    res.status(500).send({ message: "Error", err: error });
   }
 };
 
@@ -273,72 +291,72 @@ const attemptExam = async (req, res) => {
   const params = req.body;
   try {
     Exam.findOne({ _id: params.exam })
-    .populate({
-      path: "questions",
-      select: "question choices type",
-    })
-    .populate({
-      path: "category",
-      select: "_id name",
-    })
-    .select([
-      "dateTimeStart",
-      "dateTimeEnd",
-      "duration",
-      "itemNumber",
-      "category",
-      "title",
-      "description",
-    ])
-    .exec(async (err, data) => {
-      if (err) {
-        res.status(400).send({ message: "Error", error: err.message });
-        return;
-      } else if (data === null) {
-        res.status(404).send({ message: "Exam not Found" });
-        return;
-      } else {
-        //Mag attemp ngae siya igCheck anay an date
-        //Kun mayda record an user pati exam, dapat igContinue la iton
-
-        let isContinue = true;
-        const today = new Date();
-
-        if (today < new Date(data.dateTimeStart)) {
-          data.questions = undefined;
-          res.status(401).send({ message: "Exam is not open yet." });
+      .populate({
+        path: "questions",
+        select: "question choices type",
+      })
+      .populate({
+        path: "category",
+        select: "_id name",
+      })
+      .select([
+        "dateTimeStart",
+        "dateTimeEnd",
+        "duration",
+        "itemNumber",
+        "category",
+        "title",
+        "description",
+      ])
+      .exec(async (err, data) => {
+        if (err) {
+          res.status(400).send({ message: "Error", error: err.message });
           return;
-        } else if (today > new Date(data.dateTimeEnd)) {
-          data.questions = undefined;
-          res.status(401).send({ message: "Exam is closed." });
+        } else if (data === null) {
+          res.status(404).send({ message: "Exam not Found" });
           return;
         } else {
-          let record = await Record.findOne({
-            exam: mongoose.Types.ObjectId(params.exam),
-            student: mongoose.Types.ObjectId(req.user.id),
-          });
-          if (record === null) {
-            record = new Record({
+          //Mag attemp ngae siya igCheck anay an date
+          //Kun mayda record an user pati exam, dapat igContinue la iton
+
+          let isContinue = true;
+          const today = new Date();
+
+          if (today < new Date(data.dateTimeStart)) {
+            data.questions = undefined;
+            res.status(401).send({ message: "Exam is not open yet." });
+            return;
+          } else if (today > new Date(data.dateTimeEnd)) {
+            data.questions = undefined;
+            res.status(401).send({ message: "Exam is closed." });
+            return;
+          } else {
+            let record = await Record.findOne({
               exam: mongoose.Types.ObjectId(params.exam),
               student: mongoose.Types.ObjectId(req.user.id),
-              timeStart: today,
             });
-            isContinue = false;
-            await record.save();
+            if (record === null) {
+              record = new Record({
+                exam: mongoose.Types.ObjectId(params.exam),
+                student: mongoose.Types.ObjectId(req.user.id),
+                timeStart: today,
+              });
+              isContinue = false;
+              await record.save();
+            }
+            console.log(data);
+            res.status(200).send({
+              message: "Success",
+              exam: data,
+              record: record,
+              isContinue: isContinue,
+            });
+            return;
           }
-          console.log(data)
-          res.status(200).send({
-            message: "Success",
-            exam: data,
-            record: record,
-            isContinue: isContinue,
-          });
-          return;
         }
-      }
-    });
+      });
   } catch (error) {
-    res.status(500).send({message: "Error", err: error})
+    res.status(500).send({ message: "Error", err: error });
   }
 };
 
@@ -346,55 +364,55 @@ const submitExam = async (req, res) => {
   const params = req.body;
   try {
     Record.findById(mongoose.Types.ObjectId(params.record))
-    .populate({
-      path: "exam",
-      populate: {
-        path: "questions",
-      },
-    })
-    .populate("student")
-    .populate("answers.question")
-    .exec(async (err, data) => {
-      if (err) {
-        res.status(400).send({ message: "Error", error: err.message });
-        return;
-      } else if (!data) {
-        res.status(400).send({ message: "Error", error: "Data not found" });
-         return;
-      } else {
-        const questions = data.exam.questions;
-        const answers = data.answers;
-        let score = 0;
-        answers.forEach((answer) => {
-          questions.forEach((question) => {
-            if (answer.question && answer.question._id.equals(question._id)) {
-              if (answer.answer === question.answer) {
-                answer.isCorrect === true;
-                score++;
-              } else {
-                answer.isCorrect === false;
+      .populate({
+        path: "exam",
+        populate: {
+          path: "questions",
+        },
+      })
+      .populate("student")
+      .populate("answers.question")
+      .exec(async (err, data) => {
+        if (err) {
+          res.status(400).send({ message: "Error", error: err.message });
+          return;
+        } else if (!data) {
+          res.status(400).send({ message: "Error", error: "Data not found" });
+          return;
+        } else {
+          const questions = data.exam.questions;
+          const answers = data.answers;
+          let score = 0;
+          answers.forEach((answer) => {
+            questions.forEach((question) => {
+              if (answer.question && answer.question._id.equals(question._id)) {
+                if (answer.answer === question.answer) {
+                  answer.isCorrect === true;
+                  score++;
+                } else {
+                  answer.isCorrect === false;
+                }
               }
-            }
+            });
           });
-        });
-        data.score = score;
-        data.answers = answers;
-        data.isComplete = true;
-        data.timeEnd = Date.now();
-        await data.save();
-        data.exam.questions = undefined;
-        data.exam.log = undefined;
-        data.student.log = undefined;
-        data.student.password = undefined;
-        data.student.schoolId = undefined;
-        data.student.createdAt = undefined;
-        data.student.updatedAt = undefined;
-        res.status(200).send({ message: "Success", data: data });
-        return;
-      }
-    });
+          data.score = score;
+          data.answers = answers;
+          data.isComplete = true;
+          data.timeEnd = Date.now();
+          await data.save();
+          data.exam.questions = undefined;
+          data.exam.log = undefined;
+          data.student.log = undefined;
+          data.student.password = undefined;
+          data.student.schoolId = undefined;
+          data.student.createdAt = undefined;
+          data.student.updatedAt = undefined;
+          res.status(200).send({ message: "Success", data: data });
+          return;
+        }
+      });
   } catch (error) {
-    res.status(500).send({message: "Error", err: error})
+    res.status(500).send({ message: "Error", err: error });
   }
 };
 
@@ -436,11 +454,13 @@ const fetchExamProgress = async (req, res) => {
       } else {
         checker = false;
       }
-      res.status(200).send({message: "Success", isTakenByAll: checker})
+      res.status(200).send({ message: "Success", isTakenByAll: checker });
       return;
     }
   } catch (error) {
-    res.status(400).send({ message: "Something went wrong", err: error.message });
+    res
+      .status(400)
+      .send({ message: "Something went wrong", err: error.message });
     return;
   }
 };
