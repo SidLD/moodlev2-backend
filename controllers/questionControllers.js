@@ -5,6 +5,7 @@ const app = express();
 
 const Question = require("../schemas/questionSchema");
 const Exam = require("../schemas/examSchema");
+const { createArrayOfQuestions } = require('../repositories/questionRepository');
 
 /**
  * _id: id ine san question
@@ -147,21 +148,43 @@ const updateQuestion = async (req, res) => {
         // if(params._id === undefined){
         //     res.status(400).send({message: "Question _id is required"})
         // }else{
-            const { questions } = params;
-            ids = questions.id;
-            delete questions.id
+            const { updateQuestions, createQuestions, exam } = params;
+            let qToBeUpdated = []
+            let qToBeCreated = []
             try {
-                await Question.updateMany(
-                    {
-                        _id: {
-                            $in: ids
-                        }
-                    },
-                    {
-                        $set: questions,
-                    }
-                )
-                res.status(200).send({message: "Goods"})
+                if (updateQuestions > 0) {
+                    updateQuestion.forEach(updateQ => {
+                        qToBeUpdated.push({
+                            choices : updateQ.choices,
+                            type : updateQ.type,
+                            answer: updateQ.answer,
+                            question: updateQ.question,
+                            exam : mongoose.Types.ObjectId(exam),
+                            log : {
+                                user: mongoose.Types.ObjectId(req.user.id),
+                                detail: "Created Question by "+req.user.firstName + " "+req.user.lastName
+                            }
+                        })
+                    })
+                }
+                if (createQuestions > 0) {
+                    createQuestions.forEach(createQ => {
+                        qToBeCreated.push({
+                            choices : createQ.choices,
+                            type : createQ.type,
+                            answer: createQ.answer,
+                            question: createQ.question,
+                            exam : mongoose.Types.ObjectId(exam),
+                            log : {
+                                user: mongoose.Types.ObjectId(req.user.id),
+                                detail: "Created Question by "+req.user.firstName + " "+req.user.lastName
+                            }
+                        })
+                    })
+                }
+                const data = await createArrayOfQuestions(createQuestions, exam);
+                console.log("DATA? :", data, createQuestions, updateQuestions);
+                res.status(200).send({message: "Goods na niedo", data: data})
                 // const doChangeExam = params.exam === undefined ? "" : "Modified Exam Id, ";
                 // const doChangeQuestion = params.question === undefined ? "" :"Modified Question, ";
                 // const doChangeAnswer = params.answer === undefined ? "" : "Modified Answer, ";
