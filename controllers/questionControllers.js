@@ -156,6 +156,7 @@ const updateQuestion = async (req, res) => {
                 if (updateQuestions.length > 0) {
                     updateQuestions.forEach(updateQ => {
                         qToBeUpdated.push({
+                            id: updateQ.id,
                             choices : updateQ.choices,
                             type : updateQ.type,
                             answer: updateQ.answer,
@@ -183,10 +184,9 @@ const updateQuestion = async (req, res) => {
                         })
                     })
                 }
-                console.log("DATA? :", qToBeCreated, createQuestions);
-                const dataCreated = await createArrayOfQuestions(qToBeCreated, exam);
-                const dataUpdated = await updateArrayOfQuestions(qToBeUpdated, exam);
-                res.status(200).send({message: "Sucsess", data: [...dataCreated, ...dataUpdated]})
+                await createArrayOfQuestions(qToBeCreated, exam);
+                await updateArrayOfQuestions(qToBeUpdated, exam);
+                res.status(200).send({message: "Success"})
                 // const doChangeExam = params.exam === undefined ? "" : "Modified Exam Id, ";
                 // const doChangeQuestion = params.question === undefined ? "" :"Modified Question, ";
                 // const doChangeAnswer = params.answer === undefined ? "" : "Modified Answer, ";

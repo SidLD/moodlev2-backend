@@ -4,10 +4,13 @@ const mongoose = require("mongoose");
 const app = express();
 
 const Category = require("../schemas/categorySchema");
+const examSchema = require("../schemas/examSchema");
 
 /**
  * An params id didi is '_id'.
  */
+
+const { ObjectId } = mongoose.Types;
 
 const getCategory = async (req, res) => {
   const params = req.query;
@@ -59,7 +62,7 @@ const createCategory = async (req, res) => {
           // }
         });
         newCategory.log.push({
-          user: mongoose.Types.ObjectId(req.user.id),
+          user: ObjectId(req.user.id),
           detail: "Created " + params.name,
         });
         await newCategory.save(async (err, data) => {
@@ -94,7 +97,7 @@ const updateCategory = async (req, res) => {
   const params = req.body;
   if (req.user.role === "admin" || req.user.role === "superadmin") {
     try {
-      await Category.findById(mongoose.Types.ObjectId(params._id)).then(
+      await Category.findById(ObjectId(params._id)).then(
         async (room) => {
           if (room === null) {
             res.status(400).send({ message: "Category Does not exist" });
@@ -102,7 +105,7 @@ const updateCategory = async (req, res) => {
           } else {
             room.name = params.name;
             room.log.push({
-              user: mongoose.Types.ObjectId(req.user.id),
+              user: ObjectId(req.user.id),
               detail: "Modified to " + params.name,
             });
             await room.save(async (err, data) => {
@@ -130,6 +133,10 @@ const deleteCategory = async (req, res, next) => {
   const category = req.body;
   try {
     if (req.user.role === "admin" || req.user.role === "superadmin") {
+      const hasExam = await examSchema.find({category: ObjectId(category._id)})
+      if (hasExam.length > 0) {
+        return res.status(400).send({message: "Category is connected to an existing exam"})
+      }
       await Category.deleteOne({ _id: category._id }).then((data) => {
         if (data.deletedCount === 1) {
           res
