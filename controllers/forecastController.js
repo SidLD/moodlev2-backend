@@ -91,16 +91,23 @@ const getPassingRate =  async (req,res) => {
       .populate({
         path: "timeEnd score",
       })
+      .populate({
+        path: "exam",
+      })
       .exec().then( async (docs) => docs);
       let scores = []
       let testData = []
-
-
       records.forEach(d => {
+        let total = 0
+        try {
+          total = d.exam.itemNumber
+        } catch (error) {
+          
+        }
         scores.push(d.score)
         testData.push({
           date: d.timeEnd,
-          score:d.score
+          score: (100 * d.score  ) / total
         })
       })
       const passingScores = scores.filter(score => score >= passingPercentage);
@@ -140,7 +147,6 @@ const getPassingRate =  async (req,res) => {
            rates.push(passingResult)
          }
          } catch (error) {
-          console.log(error)
             return res.status(400).send({message: "Error", err: error.message})
          }
     }
