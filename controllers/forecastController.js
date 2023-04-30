@@ -149,7 +149,7 @@ const getPassingRate =  async (req,res) => {
       sum += rating
     })
 
-    return res.status(200).send({message: "Success", data: result, rate: sum/rates.length})  
+    return res.status(200).send({message: "Success", data: result, rate: sum/rates.length + "%"})  
   } catch (error) {
     return res.status(400).send({message: "Error", err: error.message})
   }  
