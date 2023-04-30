@@ -92,8 +92,7 @@ const deleteRecord = async (req, res) => {
   const params = req.body;
   try {
     let record = await Record.findOne({
-      exam: ObjectId(params.exam),
-      student: ObjectId(req.user.id),
+      _id:params.recordId
     });
     if (record) {
       await record.deleteOne({ _id: ObjectId(record._id) });
