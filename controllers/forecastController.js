@@ -125,7 +125,7 @@ const getPassingRate =  async (req,res) => {
                lastName: user.lastName,
                schoolId: user.schoolId,
                passingRate: passingResult,
-               forecast: f
+               forecast: f + "%"
              }
            )
          rates.push(passingResult)
@@ -140,7 +140,7 @@ const getPassingRate =  async (req,res) => {
                lastName: user.lastName,
                schoolId: user.schoolId,
                passingRate: passingResult,
-               forecast: f
+               forecast: f + "%"
              }
            )
 
