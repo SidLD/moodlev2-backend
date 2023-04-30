@@ -108,8 +108,10 @@ const getPassingRate =  async (req,res) => {
 
          try {
           if(passingResult > 85){
-          
-            let f = await getForecast(testData);
+          let f = 0
+          if(testData.length > 1){
+            f = await getForecast(testData);
+          }
            result.passedStudent.push(
              {
                firstName: user.firstName,
@@ -121,7 +123,10 @@ const getPassingRate =  async (req,res) => {
            )
          rates.push(passingResult)
          }else if(passingResult < 85){ 
-          let f = await getForecast(testData);
+          let f = 0
+          if(testData.length > 1){
+            f = await getForecast(testData);
+          }
            result.failedStudent.push(
              {
                firstName: user.firstName,
@@ -135,7 +140,7 @@ const getPassingRate =  async (req,res) => {
            rates.push(passingResult)
          }
          } catch (error) {
-          
+          console.log(error)
             return res.status(400).send({message: "Error", err: error.message})
          }
     }
