@@ -93,39 +93,60 @@ const getPassingRate =  async (req,res) => {
       })
       .exec().then( async (docs) => docs);
       let scores = []
+      let testData = []
+
+
       records.forEach(d => {
         scores.push(d.score)
+        testData.push({
+          date: d.timeEnd,
+          score:d.score
+        })
       })
       const passingScores = scores.filter(score => score >= passingPercentage);
       const passingResult = (passingScores.length / scores.length) * 100; 
 
-         if(passingResult > 85){
+         try {
+          if(passingResult > 85){
+          
+            let f = await getForecast(testData);
            result.passedStudent.push(
              {
                firstName: user.firstName,
                lastName: user.lastName,
                schoolId: user.schoolId,
-               passingRate: passingResult
+               passingRate: passingResult,
+               forecast: f
              }
            )
          rates.push(passingResult)
          }else if(passingResult < 85){ 
+          let f = await getForecast(testData);
            result.failedStudent.push(
              {
                firstName: user.firstName,
                lastName: user.lastName,
                schoolId: user.schoolId,
-               passingRate: passingResult
+               passingRate: passingResult,
+               forecast: f
              }
            )
 
            rates.push(passingResult)
          }
+         } catch (error) {
+          
+            return res.status(400).send({message: "Error", err: error.message})
+         }
     }
-    console.log(1)
-    return res.status(200).send({message: "Success", data: result, rate: rates})  
+    let sum = 0
+    rates.forEach(rating => {
+      sum += rating
+    })
+
+    return res.status(200).send({message: "Success", data: result, rate: sum/rates.length})  
   } catch (error) {
-    return res.status(500).send({message: "Error", err: error})
+    return res.status(400).send({message: "Error", err: error.message})
   }  
 }
 
