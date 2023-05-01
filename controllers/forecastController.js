@@ -77,7 +77,7 @@ const getPassingRate =  async (req,res) => {
         passedStudent : [],
         failedStudent : []      
     }
-    const passingPercentage = 4;
+    const passingPercentage = 3;
     let rates = []; 
      
     
@@ -97,19 +97,24 @@ const getPassingRate =  async (req,res) => {
       .exec().then( async (docs) => docs);
       let scores = []
       let testData = []
-      records.forEach(d => {
-        let total = 0
-        try {
-          total = d.exam.itemNumber
-        } catch (error) {
-          
-        }
-        scores.push(d.score)
-        testData.push({
-          date: d.timeEnd,
-          score: (100 * d.score  ) / total
+      console.log(records)
+      if(records.length > 1){
+        records.forEach(d => {
+          let total = 0
+          try {
+            total = d.exam.itemNumber
+          } catch (error) {
+            
+          }
+          scores.push(d.score)
+          testData.push({
+            date: d.timeEnd,
+            score: (100 * d.score  ) / total
+          })
         })
-      })
+      }
+
+
       const passingScores = scores.filter(score => score >= passingPercentage);
       const passingResult = (passingScores.length / scores.length) * 100; 
 

@@ -257,6 +257,7 @@ const deleteExam = async (req, res) => {
     if (req.user.role === "admin" || req.user.role === "superadmin") {
       await Exam.deleteOne({ _id: mongoose.Types.ObjectId(params.exam) })
         .then(async (data) => {
+          await Record.deleteMany({exam: params.exam})
           return await Question.deleteMany({
             exam: mongoose.Types.ObjectId(params.exam),
           });
