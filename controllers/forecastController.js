@@ -77,7 +77,7 @@ const getPassingRate =  async (req,res) => {
         passedStudent : [],
         failedStudent : []      
     }
-    const passingPercentage = 3;
+    const passingPercentage = 75;
     let rates = []; 
      
     
@@ -106,7 +106,7 @@ const getPassingRate =  async (req,res) => {
           } catch (error) {
             
           }
-          scores.push(d.score)
+          scores.push((100 * d.score) / total)
           testData.push({
             date: d.timeEnd,
             score: (100 * d.score  ) / total
