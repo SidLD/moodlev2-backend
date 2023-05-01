@@ -9,7 +9,6 @@ const { ObjectId } = mongoose.Types;
 //magamit didi _id para sa record._id
 const getRecord = async (req, res) => {
   const params = req.query;
-  console.log("wl")
   try {
     Record.where(params)
     .populate({
@@ -34,7 +33,6 @@ const getRecord = async (req, res) => {
           res.status(200).send({ message: "Success", data: data });
         } else {
           
-          console.log(data)
           data.forEach((record) => {
             //an records na
             let answers = record.answers;
@@ -116,31 +114,35 @@ const getCurrentRecord = async (req, res) => {
       exam: ObjectId(params.exam),
       student: ObjectId(req.user.id),
     });
+    console.log(data[0].isComplete)
     let record = null
-    let message = "First Attempt"
+    let message = ""
     if(data.length !== 0 ){
       try {
-        if(!data[0].isComplete){
+        if(data[0] == undefined){
+          record = null
+          message = "First Attempt"
+        }
+        else if(!data[0].isComplete){
           record = data[0]
           message = "Continue First Attempt"
+        }
+        else if(data[1] == undefined){
+          record = null
+          message = "Second Attempt"
         }
         else if(!data[1].isComplete){
           record = data[1]
           message = "Continue Second Attempt"
-        }else if(data[0].isComplete){
-          record = null
-          message = "Second Attempt"
-        }
-        else{
-          message = "No more Attemps"
+        }else{
+          message = "No more Attempt"
           record = null
         }
       } catch (error) {
-        
+        console.log(error)
       }
     }
     
-    console.log(message)
     res.status(200).send({ message: "Success", data: record, message: message });
   } catch (error) {
     res.status(400).send({ message: "Error", error: error.message });

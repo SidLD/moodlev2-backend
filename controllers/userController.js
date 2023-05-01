@@ -75,14 +75,12 @@ const login = async (req, res) => {
   const userLoggingIn = req.body;
   try {
     User.findOne({ schoolId: userLoggingIn.schoolId }).then((dbUser) => {
-      console.log(userLoggingIn)
       if (dbUser == null) {
         return res.status(400).send({ message: "Incorrect School Id or Password" });
       } else {
         bcrypt
           .compare(userLoggingIn.password, dbUser.password)
           .then((isMatch) => {
-            console.log(isMatch);
             if (isMatch) {
               if (dbUser.status === "approved") {
                 const payload = {

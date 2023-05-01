@@ -335,16 +335,22 @@ const attemptExam = async (req, res) => {
             return res.status(401).send({ message: "Exam is closed." });
           } else {
             //Para ine kun continuing pa
-            let record = await Record.findById(mongoose.Types.ObjectId(params.record))
-            if (record == null) {
+            let record = await Record.findOne({
+                exam: mongoose.Types.ObjectId(params.exam),
+                student: mongoose.Types.ObjectId(req.user.id),
+                isComplete: false
+            })
+            if (params.record == null) {
               record = new Record({
                 exam: mongoose.Types.ObjectId(params.exam),
                 student: mongoose.Types.ObjectId(req.user.id),
+                isComplete: false,
                 timeStart: today,
               });
               isContinue = false;
               await record.save();
             }
+            console.log("sdsds")
             res.status(200).send({
               message: "Success",
               exam: data,
@@ -363,7 +369,7 @@ const attemptExam = async (req, res) => {
 const submitExam = async (req, res) => {
   const params = req.body;
   try {
-    Record.findById(mongoose.Types.ObjectId(params.record))
+    Record.findById(mongoose.Types.ObjectId(params._id))
       .populate({
         path: "exam",
         populate: {
@@ -407,12 +413,13 @@ const submitExam = async (req, res) => {
           data.student.schoolId = undefined;
           data.student.createdAt = undefined;
           data.student.updatedAt = undefined;
-          res.status(200).send({ message: "Success", data: data });
-          return;
+          console.log(data)
+          return res.status(200).send({ message: "Success", data: data });
+          
         }
       });
   } catch (error) {
-    res.status(500).send({ message: "Error", err: error });
+    res.status(500).send({ message: "Error", err: error.message });
   }
 };
 
