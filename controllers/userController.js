@@ -29,7 +29,7 @@ const register = async (req, res) => {
   try {
     const schoolId = await User.findOne({ schoolId: params.schoolId });
   if (schoolId) {
-    res.status(401).send({ message: "User already Exist" });
+    return res.status(401).send({ message: "An account with the same School ID already exist and is not yet approved. Please contact admin for account approval." });
   } else {
     try {
       const hashedPassword = await bcrypt.hash(params.password, 10);
@@ -77,7 +77,7 @@ const login = async (req, res) => {
     User.findOne({ schoolId: userLoggingIn.schoolId }).then((dbUser) => {
       console.log(userLoggingIn)
       if (dbUser == null) {
-        return res.status(401).send({ message: "Incorrect School Id or Password" });
+        return res.status(400).send({ message: "Incorrect School Id or Password" });
       } else {
         bcrypt
           .compare(userLoggingIn.password, dbUser.password)
@@ -112,7 +112,7 @@ const login = async (req, res) => {
                   }
                 );
               } else {
-               return res.status(400).send({ message: "User not Aprroved" });
+               return res.status(400).send({ message: "This account is not approved or not yet registered. Please contact admin for account approval." });
               }
             } else {
               return res.status(400).send({ message: "Invalid schoolId or Password" });
@@ -120,7 +120,7 @@ const login = async (req, res) => {
           })
           .catch((err) => {
             return res
-              .status(401)
+              .status(400)
               .send({ message: "Invalid schoolId or Password", error: err });
           });
       }
@@ -444,6 +444,15 @@ const changePassword = async (req, res) => {
   }
 };
 
+const fetchAllUsers = async (req, res) => {
+  try {
+    const result = await User.find({ role: {$in: ["admin", "student"]}});
+    res.status(200).send({message: "Success", data: result});
+  } catch (error) {
+    res.status(400).send({message: "Something went wrong", error: error.message})
+  }
+}
+
 
 exports.register = register;
 exports.login = login;
@@ -459,3 +468,4 @@ exports.rejectAllUsers = rejectAllUsers;
 exports.approveAllUser = approveAllUser;
 exports.fetchAllStudents = fetchAllStudents;
 exports.changePassword = changePassword;
+exports.fetchAllUsers = fetchAllUsers;

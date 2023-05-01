@@ -18,6 +18,7 @@ const {
   changePassword,
   fetchRejectedStudents,
   fetchPendingStudents,
+  fetchAllUsers,
 } = require("../controllers/userController");
 
 app.post("/register", register);
@@ -34,5 +35,6 @@ app.get("/fetchAllStudents", verifyToken, fetchAllStudents);
 app.post("/changePassword", changePassword)
 app.get("/fetchRejectedStudents", verifyToken, fetchRejectedStudents)
 app.get("/fetchPendingStudents", verifyToken, fetchPendingStudents);
+app.get("/fetchAllUsers", verifyToken, fetchAllUsers);
 
 module.exports = app;
