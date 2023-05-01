@@ -96,8 +96,9 @@ const getPassingRate =  async (req,res) => {
       })
       .exec().then( async (docs) => docs);
       let scores = []
-      let testData = []
-      console.log(records)
+      let testData = []  
+      let record = []
+      
       if(records.length > 1){
         records.forEach(d => {
           let total = 0
@@ -107,9 +108,15 @@ const getPassingRate =  async (req,res) => {
             
           }
           scores.push((100 * d.score) / total)
+
           testData.push({
             date: d.timeEnd,
-            score: (100 * d.score  ) / total
+            score: ( d.score  / total ) * 100
+          })
+
+          record.push({
+            exam: d.exam.title,
+            rate:  ( d.score  / total ) * 100
           })
         })
       }
@@ -119,33 +126,33 @@ const getPassingRate =  async (req,res) => {
       const passingResult = (passingScores.length / scores.length) * 100; 
 
          try {
-          if(passingResult > 85){
           let f = 0
           if(testData.length > 1){
             f = await getForecast(testData);
           }
+          if(f.score > passingPercentage){
+          
            result.passedStudent.push(
              {
                firstName: user.firstName,
                lastName: user.lastName,
                schoolId: user.schoolId,
                passingRate: passingResult,
-               forecast: f
+               forecast: f,
+               record: record
              }
            )
-         rates.push(passingResult)
-         }else if(passingResult < 85){ 
-          let f = 0
-          if(testData.length > 1){
-            f = await getForecast(testData);
-          }
+          rates.push(passingResult)
+         }else if(f.score < passingPercentage){ 
            result.failedStudent.push(
              {
                firstName: user.firstName,
                lastName: user.lastName,
                schoolId: user.schoolId,
                passingRate: passingResult,
-               forecast: f
+               forecast: f,
+               
+               record: record
              }
            )
 
