@@ -93,14 +93,15 @@ const getPassingRate =  async (req,res) => {
       })
       .populate({
         path: "exam",
+        select: "title _id itemNumber"
       })
       .exec().then( async (docs) => docs);
       let scores = []
       let testData = []  
       let record = []
-      
       if(records.length > 1){
         records.forEach(d => {
+          console.log(d)
           let total = 0
           try {
             total = d.exam.itemNumber

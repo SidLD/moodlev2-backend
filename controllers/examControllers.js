@@ -332,24 +332,30 @@ const attemptExam = async (req, res) => {
             res.status(401).send({ message: "Exam is closed." });
             return;
           } else {
-            let record = await Record.findOne({
+            //Para ine kun continuing pa
+            let record = await Record.where({
               exam: mongoose.Types.ObjectId(params.exam),
               student: mongoose.Types.ObjectId(req.user.id),
             });
-            if (record === null) {
-              record = new Record({
+            let continuingRecord = null;
+            if (record.length === 0) {
+              const newRecord = new Record({
                 exam: mongoose.Types.ObjectId(params.exam),
                 student: mongoose.Types.ObjectId(req.user.id),
                 timeStart: today,
               });
               isContinue = false;
-              await record.save();
+              await newRecord.save();
+              continuingRecord = newRecord
+            }else{
+              continuingRecord = record[0].isComplete ? record[1] : record[0]
             }
-            console.log(data);
+            console.log(continuingRecord)
             res.status(200).send({
               message: "Success",
               exam: data,
-              record: record,
+              record: continuingRecord,
+              recordLength: record.length,
               isContinue: isContinue,
             });
             return;
