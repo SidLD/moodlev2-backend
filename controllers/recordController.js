@@ -127,8 +127,13 @@ const getCurrentRecord = async (req, res) => {
         else if(!data[1].isComplete){
           record = data[1]
           message = "Continue Second Attempt"
-        }else{
+        }else if(data[0].isComplete){
+          record = null
+          message = "Second Attempt"
+        }
+        else{
           message = "No more Attemps"
+          record = null
         }
       } catch (error) {
         
