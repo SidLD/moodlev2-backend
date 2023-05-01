@@ -33,6 +33,13 @@ const examSchema = mongoose.Schema(
       type: Number,
       min: 1,
     },
+    password: {
+      type: String,
+    },
+    attempts: {
+      type: Number,
+      default: 2,
+    },
     category: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Category",

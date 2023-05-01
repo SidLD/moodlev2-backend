@@ -33,6 +33,7 @@ const createExam = async (req, res) => {
         itemNumber,
         title,
         description,
+        password,
       } = params;
       if (dateTimeStart > dateTimeEnd) {
         res.status(300).send({ message: "Invalid Time" });
@@ -45,6 +46,7 @@ const createExam = async (req, res) => {
         dateTimeEnd: new Date(dateTimeEnd),
         duration: duration,
         itemNumber: itemNumber,
+        password: password,
         category: mongoose.Types.ObjectId(category),
       });
       newExam.log.push({
@@ -178,6 +180,7 @@ const updateExam = async (req, res) => {
         duration: params.duration,
         itemNumber: params.itemNumber,
         title: params.title,
+        password: params.password,
       }
       const examData = await Exam.updateOne(
       { _id: params.exam},
@@ -308,6 +311,7 @@ const attemptExam = async (req, res) => {
         "category",
         "title",
         "description",
+        "password",
       ])
       .exec(async (err, data) => {
         if (err) {
@@ -425,7 +429,6 @@ const fetchExamProgress = async (req, res) => {
       noRecord.map((rec) => students.push(rec._id));
     } else {
       return res.status(400).send({ message: "No user found" });
-      return;
     }
     const examData = await attemptExamination(examId);
     if (examData && examData.length > 0) {
