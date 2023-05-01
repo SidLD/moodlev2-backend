@@ -325,37 +325,26 @@ const attemptExam = async (req, res) => {
 
           if (today < new Date(data.dateTimeStart)) {
             data.questions = undefined;
-            res.status(401).send({ message: "Exam is not open yet." });
-            return;
+            return res.status(401).send({ message: "Exam is not open yet." });
           } else if (today > new Date(data.dateTimeEnd)) {
             data.questions = undefined;
-            res.status(401).send({ message: "Exam is closed." });
-            return;
+            return res.status(401).send({ message: "Exam is closed." });
           } else {
             //Para ine kun continuing pa
-            let record = await Record.where({
-              exam: mongoose.Types.ObjectId(params.exam),
-              student: mongoose.Types.ObjectId(req.user.id),
-            });
-            let continuingRecord = null;
-            if (record.length === 0) {
-              const newRecord = new Record({
+            let record = await Record.findById(mongoose.Types.ObjectId(params.record))
+            if (record == null) {
+              record = new Record({
                 exam: mongoose.Types.ObjectId(params.exam),
                 student: mongoose.Types.ObjectId(req.user.id),
                 timeStart: today,
               });
               isContinue = false;
-              await newRecord.save();
-              continuingRecord = newRecord
-            }else{
-              continuingRecord = record[0].isComplete ? record[1] : record[0]
+              await record.save();
             }
-            console.log(continuingRecord)
             res.status(200).send({
               message: "Success",
               exam: data,
-              record: continuingRecord,
-              recordLength: record.length,
+              record: record,
               isContinue: isContinue,
             });
             return;
