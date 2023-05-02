@@ -143,7 +143,7 @@ const getCurrentRecord = async (req, res) => {
       }
     }
     console.log(record)
-    res.status(200).send({ message: "Success", data: record, message: message });
+    res.status(200).send({ message: "Success", data: record, message: message, records: data });
   } catch (error) {
     res.status(400).send({ message: "Error", error: error.message });
   }
