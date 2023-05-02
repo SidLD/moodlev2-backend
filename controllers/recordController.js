@@ -11,49 +11,48 @@ const getRecord = async (req, res) => {
   const params = req.query;
   try {
     Record.where(params)
-    .populate({
-      path: "exam",
-      select: "_id dateTimeStart dateTimeEnd duration itemNumer category",
-      populate: {
-        path: "category",
-        select: "name _id",
-      },
-    })
-    .populate({
-      path: "student",
-      select: "_id firstName lastName",
-    })
-    .populate({
-      path: "answers.question",
-    })
-    .exec(async (err, data) => {
-      //array of data
-      try {
-        if (req.user.role === "admin" || req.user.role === "superadmin") {
-          res.status(200).send({ message: "Success", data: data });
-        } else {
-          
-          data.forEach((record) => {
-            //an records na
-            let answers = record.answers;
-            answers.forEach((room) => {
-              if (room.answer === room.question.answer) {
-                answers.isCorrect == true;
-              } else {
-                answers.isCorrect == false;
-              }
-              room.question.answer = undefined;
-              room.question.choices = undefined;
+      .populate({
+        path: "exam",
+        select: "_id dateTimeStart dateTimeEnd duration itemNumer category",
+        populate: {
+          path: "category",
+          select: "name _id",
+        },
+      })
+      .populate({
+        path: "student",
+        select: "_id firstName lastName",
+      })
+      .populate({
+        path: "answers.question",
+      })
+      .exec(async (err, data) => {
+        //array of data
+        try {
+          if (req.user.role === "admin" || req.user.role === "superadmin") {
+            res.status(200).send({ message: "Success", data: data });
+          } else {
+            data.forEach((record) => {
+              //an records na
+              let answers = record.answers;
+              answers.forEach((room) => {
+                if (room.answer === room.question.answer) {
+                  answers.isCorrect == true;
+                } else {
+                  answers.isCorrect == false;
+                }
+                room.question.answer = undefined;
+                room.question.choices = undefined;
+              });
             });
-          });
-          res.status(200).send({ message: "Success", data: data });
+            res.status(200).send({ message: "Success", data: data });
+          }
+        } catch (error) {
+          res.status(400).send({ message: "Error", error: error.message });
         }
-      } catch (error) {
-        res.status(400).send({ message: "Error", error: error.message });
-      }
-    });
+      });
   } catch (error) {
-    res.status(500).send({message: "Error", err:error})
+    res.status(500).send({ message: "Error", err: error });
   }
 };
 
@@ -93,7 +92,7 @@ const deleteRecord = async (req, res) => {
   const params = req.body;
   try {
     let record = await Record.findOne({
-      _id:params.recordId
+      _id: params.recordId,
     });
     if (record) {
       await record.deleteOne({ _id: ObjectId(record._id) });
@@ -102,7 +101,7 @@ const deleteRecord = async (req, res) => {
       res.status(400).send({ message: "Record Not Found" });
     }
   } catch (error) {
-    res.status(500).send({message:"Error", err:error})
+    res.status(500).send({ message: "Error", err: error });
   }
 };
 
@@ -114,36 +113,38 @@ const getCurrentRecord = async (req, res) => {
       exam: ObjectId(params.exam),
       student: ObjectId(req.user.id),
     });
-    console.log(data[0].isComplete)
-    let record = null
-    let message = ""
-    if(data.length !== 0 ){
+    console.log(data[0].isComplete);
+    let record = null;
+    let message = "";
+    if (data.length !== 0) {
       try {
-        if(data[0] == undefined){
-          record = null
-          message = "Pre Test Attempt"
-        }
-        else if(!data[0].isComplete){
-          record = data[0]
-          message = "Continue Pre Test Attempt"
-        }
-        else if(data[1] == undefined){
-          record = null
-          message = "Post Test Attempt"
-        }
-        else if(!data[1].isComplete){
-          record = data[1]
-          message = "Continue Post Test Attempt"
-        }else{
-          message = "No more Attempt"
-          record = null
+        if (data[0] == undefined) {
+          record = null;
+          message = "Pre Test Attempt";
+        } else if (!data[0].isComplete) {
+          record = data[0];
+          message = "Continue Pre Test Attempt";
+        } else if (data[1] == undefined) {
+          record = null;
+          message = "Post Test Attempt";
+        } else if (!data[1].isComplete) {
+          record = data[1];
+          message = "Continue Post Test Attempt";
+        } else {
+          message = "No more Attempt";
+          record = null;
         }
       } catch (error) {
-        console.log(error)
+        console.log(error);
       }
     }
-    console.log(record)
-    res.status(200).send({ message: "Success", data: record, message: message, records: data });
+    console.log(record);
+    res.status(200).send({
+      message: "Success",
+      data: record,
+      message: message,
+      records: data,
+    });
   } catch (error) {
     res.status(400).send({ message: "Error", error: error.message });
   }
@@ -226,8 +227,31 @@ const forceStartExam = async (req, res) => {
   }
 };
 
+const fetchExamPercentage = async (req, res) => {
+  try {
+    const { exam, user } = req.query;
+    let tempExam = [];
+    if (exam.length) {
+      exam.forEach((e) => {
+        tempExam.push(ObjectId(e));
+      });
+    }
+    const userData = await Record.find({
+      exam: { $in: tempExam },
+      student: ObjectId(user),
+      isComplete: true,
+    });
+    res.status(200).send({ message: "Success", data: userData });
+  } catch (error) {
+    res
+      .status(400)
+      .send({ message: "Something went wrong", error: error.message });
+  }
+};
+
 exports.getRecord = getRecord;
 exports.deleteRecord = deleteRecord;
 exports.updateRecord = updateRecord;
 exports.getCurrentRecord = getCurrentRecord;
 exports.forceStartExam = forceStartExam;
+exports.fetchExamPercentage = fetchExamPercentage;
