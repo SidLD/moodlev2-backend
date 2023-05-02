@@ -335,10 +335,10 @@ const attemptExam = async (req, res) => {
             return res.status(401).send({ message: "Exam is closed." });
           } else {
             //Para ine kun continuing pa
-            let record = await Record.findOne({
-                exam: mongoose.Types.ObjectId(params.exam),
-                student: mongoose.Types.ObjectId(req.user.id),
-                isComplete: false
+            let record = await Record.findOne( {
+              exam:mongoose.Types.ObjectId(params.exam),
+              student: mongoose.Types.ObjectId(req.user.id),
+              isComplete:false
             })
             if (params.record == null) {
               record = new Record({
@@ -413,7 +413,7 @@ const submitExam = async (req, res) => {
           data.student.schoolId = undefined;
           data.student.createdAt = undefined;
           data.student.updatedAt = undefined;
-          console.log(data)
+          console.log("Submit" + data)
           return res.status(200).send({ message: "Success", data: data });
           
         }

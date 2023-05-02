@@ -121,19 +121,19 @@ const getCurrentRecord = async (req, res) => {
       try {
         if(data[0] == undefined){
           record = null
-          message = "PreTest Attempt"
+          message = "Pre Test Attempt"
         }
         else if(!data[0].isComplete){
           record = data[0]
-          message = "Continue PreTest Attempt"
+          message = "Continue Pre Test Attempt"
         }
         else if(data[1] == undefined){
           record = null
-          message = "PostTest Attempt"
+          message = "Post Test Attempt"
         }
         else if(!data[1].isComplete){
           record = data[1]
-          message = "Continue PostTest Attempt"
+          message = "Continue Post Test Attempt"
         }else{
           message = "No more Attempt"
           record = null
@@ -142,7 +142,7 @@ const getCurrentRecord = async (req, res) => {
         console.log(error)
       }
     }
-    
+    console.log(record)
     res.status(200).send({ message: "Success", data: record, message: message });
   } catch (error) {
     res.status(400).send({ message: "Error", error: error.message });
