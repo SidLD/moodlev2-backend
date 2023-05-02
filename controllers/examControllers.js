@@ -350,7 +350,7 @@ const attemptExam = async (req, res) => {
               isContinue = false;
               await record.save();
             }
-            console.log("sdsds")
+            
             res.status(200).send({
               message: "Success",
               exam: data,
