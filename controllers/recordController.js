@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const Record = require("../schemas/recordSchema");
 const userSchema = require("../schemas/userSchema");
-const { attemptExamination } = require("../repositories/examRepository");
+const { attemptExamination, updateRecentAccess } = require("../repositories/examRepository");
 const recordSchema = require("../schemas/recordSchema");
 const { ObjectId } = mongoose.Types;
 //magamit didi _id para sa record._id
@@ -129,14 +129,14 @@ const getCurrentRecord = async (req, res) => {
       isComplete:false
     })
     let message = ""
-    if(record == null){
-      message = "Closed"
+    if(record == undefined || record == null || record.length == 0){
+      message = "Attemp PreTest"
     }
     else if(record.PreTest.isComplete == false &&  record.Postest == null){
       message = "Continue PreTest"
       isContinue = true
     }
-    else if(record.PreTest.isComplete && record.Postest == null){
+    else if(record.PreTest.isComplete && record.Postest == undefined){
       message = "Attempt Postest"
       isContinue = true
     }
@@ -233,4 +233,3 @@ exports.deleteRecord = deleteRecord;
 exports.updateRecord = updateRecord;
 exports.getCurrentRecord = getCurrentRecord;
 exports.forceStartExam = forceStartExam;
-exports.fetchExamPercentage = fetchExamPercentage;

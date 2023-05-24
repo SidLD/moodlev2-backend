@@ -1,20 +1,29 @@
 const mongoose = require("mongoose");
 const Exam = require("../schemas/examSchema");
-
+const recordSchema = require("../schemas/userSchema");
 const { ObjectId } = mongoose.Types;
 
 const updateRecentAccess = async(userId,examId) => {
-  const user = userSchema.findById(userId)
+  const user = recordSchema.findById(userId)
   const recentAccess = user.recentAccess
-  for (let index = recentAccess.length-1; index > 0; index--) {
-    recentAccess[index] = recentAccess[index-1];
+ try {
+  if(recentAccess != undefined || recentAccess == null){
+    for (let index = recentAccess.length-1; index > 0; index--) {
+      recentAccess[index] = recentAccess[index-1];
+    }
+    recentAccess[0] = ObjectId(examId)
+  }else{
+    recentAccess = [(ObjectId(examId))]
   }
-  recentAccess[0] = ObjectId(examId)
+ 
   if(user.recentAccess >= 6){
    recentAccess.shift()
   }
   user.recentAccess = recentAccess;
   await user.save();
+ } catch (error) {
+  console.log(error)
+ }
 }
 
 const attemptExamination = async (examId) => {

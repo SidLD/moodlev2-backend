@@ -42,6 +42,7 @@ const createExam = async (req, res) => {
         res.status(300).send({ message: "Invalid Time" });
         return;
       }
+      console.log(params)
       const newExam = new Exam({
         title: title,
         description: description,
@@ -226,7 +227,7 @@ const attemptExam = async (req, res) => {
             })
 
             let message = ""
-            if(record == null){
+            if(record == null || record == undefined){
               message = "Attempt PreTest"
                 record = new recordSchema({
                 exam : ObjectId(data._id),
@@ -238,11 +239,11 @@ const attemptExam = async (req, res) => {
                 }
               })
             }
-            else if(record.PreTest.isComplete == false &&  record.Postest == null){
+            else if(record.PreTest.isComplete = false &&  record.Postest == null){
               message = "Continue PreTest"
               isContinue = true
             }
-            else if(record.PreTest.isComplete && record.Postest == null){
+            else if(record.PreTest.isComplete && (record.Postest == null || record.postTest == undefined)){
               message = "Attempt Postest"
               record.postTest.timeStart = new Date()
               record.postTest.isComplete = false
