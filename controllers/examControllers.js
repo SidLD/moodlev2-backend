@@ -42,7 +42,6 @@ const createExam = async (req, res) => {
         res.status(300).send({ message: "Invalid Time" });
         return;
       }
-      console.log(params)
       const newExam = new Exam({
         title: title,
         description: description,
@@ -52,6 +51,7 @@ const createExam = async (req, res) => {
         reviewDuration: reviewDuration,
         itemNumber: itemNumber,
         password: password,
+        isReviewTrigger: false,
         category: mongoose.Types.ObjectId(category),
       });
       newExam.log.push({
@@ -375,6 +375,7 @@ const triggerReviewDuration = async (req, res) => {
     end.setDate(end.getDay + reviewDuration)
     exam.start = start
     exam.end = end
+    exam.isReviewTrigger = true
     await exam.save(async (data, err) => {
       if(err){
         return res

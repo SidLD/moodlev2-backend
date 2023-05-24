@@ -3,6 +3,7 @@ const Record = require("../schemas/recordSchema");
 const userSchema = require("../schemas/userSchema");
 const { attemptExamination, updateRecentAccess } = require("../repositories/examRepository");
 const recordSchema = require("../schemas/recordSchema");
+const examSchema = require("../schemas/examSchema");
 const { ObjectId } = mongoose.Types;
 //magamit didi _id para sa record._id
 const getRecord = async (req, res) => {
@@ -140,10 +141,16 @@ const getCurrentRecord = async (req, res) => {
       isPreTest = true 
     }
     else if(record.preTest.isComplete && record.postTest.timeStart == undefined){
-      message = "Attempt Postest"
-      record.postTest.timeStart = new Date()
-      record.postTest.isComplete = false
-      isPreTest = false
+      const exam = await examSchema.findById(record.exam)
+      console.log(exam.isReviewTrigger)
+      if(exam.isReviewTrigger){
+        message = "Attempt Postest"
+        isPreTest = false
+      }else{
+        message = "Review Duration"
+        isPreTest = null
+      }
+     
     }
     else if(record.preTest.isComplete && record.postTest.isComplete == false){
       message = "Continue PostTest"

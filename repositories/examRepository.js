@@ -4,38 +4,44 @@ const userSchema = require("../schemas/userSchema");
 const { ObjectId } = mongoose.Types;
 
 const ifExamExist = async (data, exam) => {
+  console.log(ObjectId(exam))
   let i;
+  let ret = -1
   for (i = 0; i < data.length; i++) {
-      if (data[i] === exam) {
-          return true;
-      }
+    if (data[i].toString() == exam) {
+      console.log("didi "+i)
+      ret = i;
+    }
   }
+  return ret
 }
 const updateRecentAccess = async(userId,examId) => {
   const user = await userSchema.findById(userId)
   let recentAccess = user.recentAccess
  try {
   if(recentAccess != undefined || recentAccess != null){
-    if(recentAccess.length > 6){
-      recentAccess.pop();
+    
+    const indexKunNaExist = await ifExamExist(recentAccess, examId)
+    console.log(indexKunNaExist)
+    if(indexKunNaExist > -1){
+      recentAccess.splice(indexKunNaExist, 1)
+      console.log("Ngade"+indexKunNaExist)
     }
-    if(ifExamExist(recentAccess, examId)){
-      recentAccess.splice(recentAccess.indexOf(examId))
+    
+    recentAccess.push(recentAccess[recentAccess.length-1])
+    
+    for (let index = recentAccess.length-1; index > 0; index--) {
+       recentAccess[index] = recentAccess[index-1];
     }
-    if(!(recentAccess[0] == examId)){
-      recentAccess.push(recentAccess[recentAccess.length-1])
-      for (let index = recentAccess.length-1; index > 0; index--) {
-        recentAccess[index] = recentAccess[index-1];
-      }
-      recentAccess[0] = ObjectId(examId)
-      if(user.recentAccess >= 6){
-        recentAccess.shift()
-       }
+    recentAccess[0] = ObjectId(examId)
+
+    // recentAccess.splice(1,5);
+    if(recentAccess.length > 5){
+      recentAccess.splice(5,1);
     }
   }else{
     recentAccess = [(ObjectId(examId))]
   }
-  console.log(recentAccess)
   user.recentAccess = recentAccess;
   await user.save();
  } catch (error) {

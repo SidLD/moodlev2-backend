@@ -16,6 +16,9 @@ const examSchema = mongoose.Schema(
       type: String,
       required: true,
     },
+    isReviewTrigger:{
+      default: false
+    },
     description: {
       type: String,
     },
