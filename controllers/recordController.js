@@ -60,6 +60,7 @@ const getRecord = async (req, res) => {
 //Pag add la ine san question/answers
 const updateRecord = async (req, res) => {
   const params = req.body;
+  console.log("sdasdsa")
   try {
     let record = await Record.findOne({
       exam: ObjectId(params.exam),
@@ -126,30 +127,32 @@ const getCurrentRecord = async (req, res) => {
     let record = await Record.findOne({
       exam:mongoose.Types.ObjectId(params.exam),
       student: mongoose.Types.ObjectId(req.user.id),
-      isComplete:false
     })
     let message = ""
     let isPreTest = null
-    if(record == undefined){
+    if(record == null || record == undefined){
       message = "Attempt PreTest"
       isPreTest = true
     }
-    else if(record.preTest.isComplete == false){
+    else if(!record.preTest.isComplete){
       message = "Continue PreTest"
       isContinue = true
-      isPreTest = true
+      isPreTest = true 
     }
-    else if(record.preTest.isComplete && record.postest.timeStart == undefined){
+    else if(record.preTest.isComplete && record.postTest.timeStart == undefined){
       message = "Attempt Postest"
-      isContinue = true
+      record.postTest.timeStart = new Date()
+      record.postTest.isComplete = false
       isPreTest = false
     }
-    else if(record.preTest.isComplete && record.postest.isComplete == false){
+    else if(record.preTest.isComplete && record.postTest.isComplete == false){
       message = "Continue PostTest"
-      isPreTest= false
+      isPreTest = false
     }
     else if(record.isComplete){
-      message = "Exam is Closed"
+      message = "Exam is Close"
+      record = null
+      isPreTest = null
     }
     
     await updateRecentAccess(req.user.id, params.exam)

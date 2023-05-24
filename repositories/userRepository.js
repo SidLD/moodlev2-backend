@@ -2,11 +2,17 @@ const recordSchema = require("../schemas/recordSchema");
 
 const fetchStudentRecords = async (year) => {
   try {
+    let min = new Date();
+    min.setFullYear(year)
+    min.setMonth(0)
+    let max = new Date();
+    max.setFullYear(year)
+    max.setMonth(11)
     const records = await recordSchema.aggregate([
-      {
-        $expr: {
-          $eq: [{ $year: "$createdAt" }, year]
-        },
+      { 
+        $match: { 
+          createdAt: { $gte: min, $lte: max } 
+        }
       },
       {
         $lookup: {

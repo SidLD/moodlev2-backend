@@ -242,18 +242,18 @@ const attemptExam = async (req, res) => {
               })
               isPreTest = true
             }
-            else if(record.preTest.isComplete = false){
+            else if(!record.preTest.isComplete){
               message = "Continue PreTest"
               isContinue = true
               isPreTest = true 
             }
-            else if(record.preTest.isComplete && (record.postest == null || record.postTest == undefined)){
+            else if(record.preTest.isComplete && record.postTest.timeStart == undefined){
               message = "Attempt Postest"
               record.postTest.timeStart = new Date()
               record.postTest.isComplete = false
               isPreTest = false
             }
-            else if(record.preTest.isComplete && record.postest.isComplete == false){
+            else if(record.preTest.isComplete && record.postTest.isComplete == false){
               message = "Continue PostTest"
               isPreTest = false
             }
@@ -264,7 +264,6 @@ const attemptExam = async (req, res) => {
             await record.save()
             await updateRecentAccess(req.user.id, params.exam)
 
-            console.log(data)
             res.status(200).send({
               message: "Success",
               exam: data,
@@ -300,7 +299,7 @@ const submitExam = async (req, res) => {
           res.status(400).send({ message: "Error", error: "Data not found" });
           return;
         } else {
-         if(data.preTest.isComplete = false){
+         if(data.preTest.isComplete == false){
           const questions = data.exam.questions;
           const answers = data.preTest.answers;
           let score = 0;
@@ -340,6 +339,7 @@ const submitExam = async (req, res) => {
             data.postTest.score = score;
             data.postTest.answers = answers;
             data.postTest.isComplete = true;
+            data.isComplete = true
             data.postTest.timeEnd = Date.now();
             await data.save();
          }

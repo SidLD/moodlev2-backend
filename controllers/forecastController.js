@@ -81,20 +81,18 @@ const getPassingRate =  async (req,res) => {
     let rates = []; 
      
     
-
+    //Find One didi kay once nala gud makakaTake an user san mock exam
     for(const user of users){
-      const records = await Record.where({ student: ObjectId(user._id), isComplete: true})
+      const records = await Record.findOne({ student: ObjectId(user._id), isComplete: true})
       .populate({
         path: "student",
         select: "_id firstName lastName schoolId",
       })
       .populate({
         path: "preTest",
-        select: "score"
       })
       .populate({
         path: "postTest",
-        path: "score",
       })
       .populate({
         path: "exam",
@@ -102,40 +100,44 @@ const getPassingRate =  async (req,res) => {
       })
       .exec().then( async (docs) => docs);
       let scores = []
-      let testData = []  
-      let record = []
-      if(records.length > 1){
-        records.forEach(d => {
-          let total = 0
-          try {
-            total = d.exam.itemNumber
-          } catch (error) {
+      // let testData = []  
+      // let record = []\
+     if(!(records == undefined)){
+      scores.push( 
+        ( records.preTest.score  / records.exam.itemNumber ) * 100
+      )
+      scores.push(
+        ( records.postTest.score  / records.exam.itemNumber ) * 100
+      )
+      // if(records.length > 1){
+      //   records.forEach(d => {
+      //     let total = 0
+      //     try {
+      //       total = d.exam.itemNumber
+      //     } catch (error) {
             
-          }
-          scores.push((100 * d.score) / total)
+      //     }
+      //     scores.push((100 * d.score) / total)
 
-          testData.push({
-            date: d.timeEnd,
-            score: ( d.score  / total ) * 100
-          })
+      //     testData.push({
+      //       date: d.timeEnd,
+      //       score: ( d.score  / total ) * 100
+      //     })
 
-          record.push({
-            exam: d.exam.title,
-            rate:  ( d.score  / total ) * 100
-          })
-        })
-      }
-
-
+      //     record.push({
+      //       exam: d.exam.title,
+      //       rate:  ( d.score  / total ) * 100
+      //     })
+      //   })
+      // }
       const passingScores = scores.filter(score => score >= passingPercentage);
       const passingResult = (passingScores.length / scores.length) * 100; 
-
          try {
-          let f = 0
-          if(testData.length > 1){
-            f = await getForecast(testData);
-          }
-          if(f.score > passingPercentage){
+          // let f = 0
+          // if(testData.length > 1){
+          //   f = await getForecast(testData);
+          // }
+          if(passingResult > passingPercentage){
           
            result.passedStudent.push(
              {
@@ -143,21 +145,16 @@ const getPassingRate =  async (req,res) => {
                lastName: user.lastName,
                schoolId: user.schoolId,
                passingRate:  passingResult.toFixed(2) + "%",
-               forecast: f,
-               record: record
              }
            )
           rates.push(passingResult)
-         }else if(f.score < passingPercentage){ 
+         }else if(passingResult < passingPercentage){ 
            result.failedStudent.push(
              {
                firstName: user.firstName,
                lastName: user.lastName,
                schoolId: user.schoolId,
                passingRate: passingResult.toFixed(2) + "%",
-               forecast: f,
-               
-               record: record
              }
            )
 
@@ -166,6 +163,7 @@ const getPassingRate =  async (req,res) => {
          } catch (error) {
             return res.status(400).send({message: "Error", err: error.message})
          }
+     }
     }
     let sum = 0
     rates.forEach(rating => {
