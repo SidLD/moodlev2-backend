@@ -4,12 +4,10 @@ const userSchema = require("../schemas/userSchema");
 const { ObjectId } = mongoose.Types;
 
 const ifExamExist = async (data, exam) => {
-  console.log(ObjectId(exam))
   let i;
   let ret = -1
   for (i = 0; i < data.length; i++) {
     if (data[i].toString() == exam) {
-      console.log("didi "+i)
       ret = i;
     }
   }
@@ -22,10 +20,8 @@ const updateRecentAccess = async(userId,examId) => {
   if(recentAccess != undefined || recentAccess != null){
     
     const indexKunNaExist = await ifExamExist(recentAccess, examId)
-    console.log(indexKunNaExist)
     if(indexKunNaExist > -1){
       recentAccess.splice(indexKunNaExist, 1)
-      console.log("Ngade"+indexKunNaExist)
     }
     
     recentAccess.push(recentAccess[recentAccess.length-1])

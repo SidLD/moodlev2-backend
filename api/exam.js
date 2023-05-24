@@ -11,9 +11,11 @@ const {
   attemptExam,
   submitExam,
   triggerReviewDuration,
-  recentAccess
+  recentAccess,
+  addForceExamStudent
 } = require("../controllers/examControllers");
 
+app.post("/addForceExamStudent",verifyToken, addForceExamStudent)
 app.post("/exam", verifyToken, createExam);
 app.get("/exam", verifyToken, getExams);
 app.get("/recentAccess", verifyToken, recentAccess);

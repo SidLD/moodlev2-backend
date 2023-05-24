@@ -140,15 +140,15 @@ const getCurrentRecord = async (req, res) => {
       isContinue = true
       isPreTest = true 
     }
-    else if(record.preTest.isComplete && record.postTest.timeStart == undefined){
+    else if(record.preTest.isComplete){
       const exam = await examSchema.findById(record.exam)
-      console.log(exam.isReviewTrigger)
-      if(exam.isReviewTrigger){
+      if(exam.isTriggerReviewDuration == true){
         message = "Attempt Postest"
         isPreTest = false
       }else{
         message = "Review Duration"
         isPreTest = null
+        console.log(message)
       }
      
     }

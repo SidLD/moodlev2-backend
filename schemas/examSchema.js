@@ -56,6 +56,7 @@ const examSchema = mongoose.Schema(
       },
     ],
     isTriggerReviewDuration:{
+      type: Boolean,
       default: false
     },
     forceTakeExamStudents:[

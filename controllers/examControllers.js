@@ -6,6 +6,7 @@ const { attemptExamination, updateRecentAccess} = require("../repositories/examR
 const userSchema = require("../schemas/userSchema");
 const e = require("express");
 const recordSchema = require("../schemas/recordSchema");
+const examSchema = require("../schemas/examSchema");
 
 const { ObjectId } = mongoose.Types;
 /**
@@ -51,7 +52,7 @@ const createExam = async (req, res) => {
         reviewDuration: reviewDuration,
         itemNumber: itemNumber,
         password: password,
-        isReviewTrigger: false,
+        isTriggerReviewDuration: false,
         category: mongoose.Types.ObjectId(category),
       });
       newExam.log.push({
@@ -367,7 +368,7 @@ const triggerReviewDuration = async (req, res) => {
   
   const params = req.body;
   try {
-    const exam = Exam.findById(Object(params.examId))
+    const exam = await Exam.findById(Object(params.examId))
     const reviewDuration = exam.reviewDuration
     const start = new Date(exam.dateTimeStart)
     const end = new Date(exam.dateTimeEnd)
@@ -375,12 +376,12 @@ const triggerReviewDuration = async (req, res) => {
     end.setDate(end.getDay + reviewDuration)
     exam.start = start
     exam.end = end
-    exam.isReviewTrigger = true
-    await exam.save(async (data, err) => {
+    exam.isTriggerReviewDuration = true
+    await exam.save(async (err, data) => {
       if(err){
         return res
           .status(400)
-          .send({ message: "Something went wrong", err: err.message });
+          .send({ message: "Something went wrong", err: err });
       }else{
         return res
         .status(200)
@@ -396,12 +397,33 @@ const triggerReviewDuration = async (req, res) => {
 };
 
 const recentAccess = async (req, res) => {
-  const user = await userSchema.findById(req.user.id).populate("recentAccess")
-  console.log(user.recentAccess)
-  return res.status(200).send({message:"OK", data: user.recentAccess})
+  try {
+    const user = await userSchema.findById(req.user.id).populate("recentAccess")
+    return res.status(200).send({message:"OK", data: user.recentAccess})
+  } catch (error) {
+    return res.status(400).send({message:"Something Went Wrong", data: error.message})
+  }
+ 
 };
 
+const addForceExamStudent = async (req,res) => {
+  const params = req.body
+  try {
+    const exam = await examSchema.findById(params.examId)
+    if(exam.forceTakeExamStudents == null || exam.forceTakeExamStudents == undefined){
+      exam.forceTakeExamStudents[0] = ObjectId(params.studentId)
+    }else{
+      exam.forceTakeExamStudents.push(ObjectId(params.studentId))
+    }
+    await exam.save()
+    await updateRecentAccess(req.user.id, params.examId)
+    return res.status(200).send({message:"OK", data: exam})
+  } catch (error) {
+    return res.status(400).send({message:"Something Went Wrong", data: error.message})
+  }
+}
 
+exports.addForceExamStudent = addForceExamStudent
 exports.recentAccess = recentAccess
 exports.createExam = createExam;
 exports.getExams = getExams;
