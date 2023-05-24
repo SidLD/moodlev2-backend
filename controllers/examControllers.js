@@ -228,6 +228,7 @@ const attemptExam = async (req, res) => {
             })
 
             let message = ""
+            let isPreTest = null
             if(record == null || record == undefined){
               message = "Attempt PreTest"
                 record = new recordSchema({
@@ -239,18 +240,22 @@ const attemptExam = async (req, res) => {
                   isComplete: false
                 }
               })
+              isPreTest = true
             }
-            else if(record.preTest.isComplete = false &&  record.postest == null){
+            else if(record.preTest.isComplete = false){
               message = "Continue PreTest"
               isContinue = true
+              isPreTest = true 
             }
             else if(record.preTest.isComplete && (record.postest == null || record.postTest == undefined)){
               message = "Attempt Postest"
               record.postTest.timeStart = new Date()
               record.postTest.isComplete = false
+              isPreTest = false
             }
             else if(record.preTest.isComplete && record.postest.isComplete == false){
               message = "Continue PostTest"
+              isPreTest = false
             }
             else if(record.isComplete){
               message = "Exam is Closed"
@@ -265,6 +270,7 @@ const attemptExam = async (req, res) => {
               exam: data,
               record: record,
               isContinue: isContinue,
+              isPreTest: isPreTest
             });
             return;
           }
@@ -389,7 +395,8 @@ const triggerReviewDuration = async (req, res) => {
 };
 
 const recentAccess = async (req, res) => {
-  const user = userSchema.findById(req.user.id)
+  const user = userSchema.findById(req.user.id).populate("recentAccess.exam")
+  console.log(user)
   return res.status(200).send({message:"OK", data: user.recentAccess})
 };
 
