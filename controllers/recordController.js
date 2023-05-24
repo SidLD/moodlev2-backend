@@ -46,15 +46,15 @@ const getRecord = async (req, res) => {
               room.question.answer = undefined;
               room.question.choices = undefined;
             });
+            res.status(200).send({ message: "Success", data: data });
           });
-          res.status(200).send({ message: "Success", data: data });
+          }
+        } catch (error) {
+          res.status(400).send({ message: "Error", error: error.message });
         }
-      } catch (error) {
-        res.status(400).send({ message: "Error", error: error.message });
-      }
-    });
+      });
   } catch (error) {
-    res.status(500).send({message: "Error", err:error})
+    res.status(500).send({ message: "Error", err: error });
   }
 };
 //Pag add la ine san question/answers
@@ -108,7 +108,7 @@ const deleteRecord = async (req, res) => {
   const params = req.body;
   try {
     let record = await Record.findOne({
-      _id:params.recordId
+      _id: params.recordId,
     });
     if (record) {
       await record.deleteOne({ _id: ObjectId(record._id) });
@@ -117,7 +117,7 @@ const deleteRecord = async (req, res) => {
       res.status(400).send({ message: "Record Not Found" });
     }
   } catch (error) {
-    res.status(500).send({message:"Error", err:error})
+    res.status(500).send({ message: "Error", err: error });
   }
 };
 const getCurrentRecord = async (req, res) => {
@@ -233,3 +233,4 @@ exports.deleteRecord = deleteRecord;
 exports.updateRecord = updateRecord;
 exports.getCurrentRecord = getCurrentRecord;
 exports.forceStartExam = forceStartExam;
+exports.fetchExamPercentage = fetchExamPercentage;
