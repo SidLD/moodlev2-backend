@@ -129,26 +129,31 @@ const getCurrentRecord = async (req, res) => {
       isComplete:false
     })
     let message = ""
+    let isPreTest = null
     if(record == undefined){
       message = "Attempt PreTest"
+      isPreTest = true
     }
     else if(record.preTest.isComplete == false){
       message = "Continue PreTest"
       isContinue = true
+      isPreTest = true
     }
     else if(record.preTest.isComplete && record.postest.timeStart == undefined){
       message = "Attempt Postest"
       isContinue = true
+      isPreTest = false
     }
     else if(record.preTest.isComplete && record.postest.isComplete == false){
       message = "Continue PostTest"
+      isPreTest= false
     }
     else if(record.isComplete){
       message = "Exam is Closed"
     }
     
     await updateRecentAccess(req.user.id, params.exam)
-    res.status(200).send({ message: message, record: record});
+    res.status(200).send({ message: message, record: record, isPretest: isPreTest});
   } catch (error) {
     console.log(error)
     res.status(400).send({ message: "Error", error: error.message });

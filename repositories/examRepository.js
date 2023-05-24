@@ -20,8 +20,6 @@ const updateRecentAccess = async(userId,examId) => {
   }else{
     recentAccess = [(ObjectId(examId))]
   }
-
-  console.log(user)
   user.recentAccess = recentAccess;
   await user.save();
  } catch (error) {

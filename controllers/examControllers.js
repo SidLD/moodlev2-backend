@@ -209,6 +209,7 @@ const attemptExam = async (req, res) => {
           res.status(404).send({ message: "Exam not Found" });
           return;
         } else {
+
           let isContinue = true;
           const today = new Date();
 
@@ -254,8 +255,11 @@ const attemptExam = async (req, res) => {
             else if(record.isComplete){
               message = "Exam is Closed"
             }
+    
             await record.save()
             await updateRecentAccess(req.user.id, params.exam)
+
+            console.log(data)
             res.status(200).send({
               message: "Success",
               exam: data,
