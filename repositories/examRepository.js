@@ -3,12 +3,27 @@ const Exam = require("../schemas/examSchema");
 const userSchema = require("../schemas/userSchema");
 const { ObjectId } = mongoose.Types;
 
+const ifExamExist = async (data, exam) => {
+  let i;
+  for (i = 0; i < data.length; i++) {
+      if (data[i] === exam) {
+          return true;
+      }
+  }
+}
 const updateRecentAccess = async(userId,examId) => {
   const user = await userSchema.findById(userId)
   let recentAccess = user.recentAccess
  try {
-  if(recentAccess != undefined){
+  if(recentAccess != undefined || recentAccess != null){
+    if(recentAccess.length > 6){
+      recentAccess.pop();
+    }
+    if(ifExamExist(recentAccess, examId)){
+      recentAccess.splice(recentAccess.indexOf(examId))
+    }
     if(!(recentAccess[0] == examId)){
+      recentAccess.push(recentAccess[recentAccess.length-1])
       for (let index = recentAccess.length-1; index > 0; index--) {
         recentAccess[index] = recentAccess[index-1];
       }
@@ -20,6 +35,7 @@ const updateRecentAccess = async(userId,examId) => {
   }else{
     recentAccess = [(ObjectId(examId))]
   }
+  console.log(recentAccess)
   user.recentAccess = recentAccess;
   await user.save();
  } catch (error) {

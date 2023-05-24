@@ -395,8 +395,8 @@ const triggerReviewDuration = async (req, res) => {
 };
 
 const recentAccess = async (req, res) => {
-  const user = userSchema.findById(req.user.id).populate("recentAccess.exam")
-  console.log(user)
+  const user = await userSchema.findById(req.user.id).populate("recentAccess")
+  console.log(user.recentAccess)
   return res.status(200).send({message:"OK", data: user.recentAccess})
 };
 
