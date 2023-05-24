@@ -14,8 +14,7 @@ const recordSchema = mongoose.Schema({
     },
     preTest: {
         timeStart:{
-            type: Date,
-            required: true,
+            type: Date
         },
         timeEnd:{
             type: Date,
@@ -40,8 +39,7 @@ const recordSchema = mongoose.Schema({
     },
     postTest: {
         timeStart:{
-            type: Date,
-            required: true,
+            type: Date
         },
         timeEnd:{
             type: Date,

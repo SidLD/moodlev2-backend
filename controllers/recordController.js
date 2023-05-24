@@ -123,32 +123,34 @@ const deleteRecord = async (req, res) => {
 const getCurrentRecord = async (req, res) => {
   try {
     const params = req.query;
-    let record = await Record.where({
+    let record = await Record.findOne({
       exam:mongoose.Types.ObjectId(params.exam),
       student: mongoose.Types.ObjectId(req.user.id),
       isComplete:false
     })
     let message = ""
-    if(record == undefined || record == null || record.length == 0){
-      message = "Attemp PreTest"
+    if(record == undefined){
+      message = "Attempt PreTest"
     }
-    else if(record.PreTest.isComplete == false &&  record.Postest == null){
+    else if(record.preTest.isComplete == false){
       message = "Continue PreTest"
       isContinue = true
     }
-    else if(record.PreTest.isComplete && record.Postest == undefined){
+    else if(record.preTest.isComplete && record.postest.timeStart == undefined){
       message = "Attempt Postest"
       isContinue = true
     }
-    else if(record.PreTest.isComplete && record.Postest.isComplete == false){
+    else if(record.preTest.isComplete && record.postest.isComplete == false){
       message = "Continue PostTest"
     }
     else if(record.isComplete){
       message = "Exam is Closed"
     }
+    
     await updateRecentAccess(req.user.id, params.exam)
     res.status(200).send({ message: message, record: record});
   } catch (error) {
+    console.log(error)
     res.status(400).send({ message: "Error", error: error.message });
   }
 };

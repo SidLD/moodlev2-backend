@@ -220,7 +220,7 @@ const attemptExam = async (req, res) => {
             return res.status(401).send({ message: "Exam is closed." });
           } else {
             //Para ine kun continuing pa
-            let record = await Record.where({
+            let record = await Record.findOne({
               exam:mongoose.Types.ObjectId(params.exam),
               student: mongoose.Types.ObjectId(req.user.id),
               isComplete:false
@@ -239,16 +239,16 @@ const attemptExam = async (req, res) => {
                 }
               })
             }
-            else if(record.PreTest.isComplete = false &&  record.Postest == null){
+            else if(record.preTest.isComplete = false &&  record.postest == null){
               message = "Continue PreTest"
               isContinue = true
             }
-            else if(record.PreTest.isComplete && (record.Postest == null || record.postTest == undefined)){
+            else if(record.preTest.isComplete && (record.postest == null || record.postTest == undefined)){
               message = "Attempt Postest"
               record.postTest.timeStart = new Date()
               record.postTest.isComplete = false
             }
-            else if(record.PreTest.isComplete && record.Postest.isComplete == false){
+            else if(record.preTest.isComplete && record.postest.isComplete == false){
               message = "Continue PostTest"
             }
             else if(record.isComplete){
