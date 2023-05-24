@@ -57,6 +57,12 @@ const userSchema = mongoose.Schema(
       enum: ["pending", "approved", "rejected"],
     },
     log: [logSchema],
+    recentAccess: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Exam",
+      }
+    ]
   },
   {
     timestamps: true,

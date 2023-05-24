@@ -12,32 +12,66 @@ const recordSchema = mongoose.Schema({
         ref: 'User',
         required: true,
     },
-    timeStart:{
-        type: Date,
-        required: true,
+    preTest: {
+        timeStart:{
+            type: Date,
+            required: true,
+        },
+        timeEnd:{
+            type: Date,
+        },
+        isComplete: {
+            type: Boolean,
+            default: false
+        },
+        answers: [
+            {
+                question: {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: 'Question'
+                },
+                answer: String,
+                isCorrect: Boolean
+            }
+        ],
+        score:{
+            type: Number,
+        }
     },
-    timeEnd:{
-        type: Date,
+    postTest: {
+        timeStart:{
+            type: Date,
+            required: true,
+        },
+        timeEnd:{
+            type: Date,
+        },
+        isComplete: {
+            type: Boolean,
+            default: false
+        },
+        answers: [
+            {
+                question: {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: 'Question'
+                },
+                answer: String,
+                isCorrect: Boolean
+            }
+        ],
+        score:{
+            type: Number,
+        }
     },
     isComplete: {
         type: Boolean,
         default: false
     },
-    answers: [
-        {
-            question: {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: 'Question'
-            },
-            answer: String,
-            isCorrect: Boolean
-        }
-    ],
-    score:{
-        type: Number,
-    }
+
 }, {
-    timestamps: true}
+    timestamps: true
+}
 )
 
 module.exports = mongoose.model("Record", recordSchema);

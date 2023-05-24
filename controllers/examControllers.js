@@ -2,8 +2,10 @@ const Exam = require("../schemas/examSchema");
 const Record = require("../schemas/recordSchema");
 const Question = require("../schemas/questionSchema");
 const mongoose = require("mongoose");
-const { attemptExamination } = require("../repositories/examRepository");
+const { attemptExamination, updateRecentAccess} = require("../repositories/examRepository");
 const userSchema = require("../schemas/userSchema");
+const e = require("express");
+const recordSchema = require("../schemas/recordSchema");
 
 const { ObjectId } = mongoose.Types;
 /**
@@ -34,6 +36,7 @@ const createExam = async (req, res) => {
         title,
         description,
         password,
+        reviewDuration
       } = params;
       if (dateTimeStart > dateTimeEnd) {
         res.status(300).send({ message: "Invalid Time" });
@@ -45,6 +48,7 @@ const createExam = async (req, res) => {
         dateTimeStart: new Date(dateTimeStart),
         dateTimeEnd: new Date(dateTimeEnd),
         duration: duration,
+        reviewDuration: reviewDuration,
         itemNumber: itemNumber,
         password: password,
         category: mongoose.Types.ObjectId(category),
@@ -80,88 +84,22 @@ const getExams = async (req, res) => {
     Exam.where(params)
       .populate({
         path: "log.user",
-        select: "firstName lastName",
+        select: "firstName lastName updatedAt",
       })
       .populate({
         path: "category",
         select: "name _id",
       })
+      .sort({"updatedAt": -1})
       .exec(async (err, data) => {
         if (err) {
           res.status(400).send({ message: "Error", err: err.message });
           return;
         } else {
-          // data.forEach(d => {
-          //   data.questions = undefined
-          // })
-
           res.status(200).send({ message: "Success", data: data });
           return;
         }
       });
-    // } else {
-    //   let record = await Record.findOne({
-    //     exam: mongoose.Types.ObjectId(params.exam),
-    //     student: mongoose.Types.ObjectId(req.user.id),
-    //     isComplete: false,
-    //   });
-    //   let exam = await Exam.findOne({
-    //     _id: mongoose.Types.ObjectId(params.exam),
-    //   })
-    //     .populate({
-    //       path: "category",
-    //       select: "_id name",
-    //     })
-    //     .select([
-    //       "dateTimeStart",
-    //       "dateTimeEnd",
-    //       "duration",
-    //       "itemNumber",
-    //       "category",
-    //       "title",
-    //       "description",
-    //     ]);
-    //   let isContinue = false;
-    //   if (record) {
-    //     isContinue = record.isContinue;
-    //   }
-    //   if (exam !== null) {
-    //     const today = new Date();
-    //     const examStartDate = new Date(exam.dateTimeStart);
-    //     const examEndDate = new Date(exam.dateTimeEnd);
-    //     if (examStartDate < today && examEndDate > today) {
-    //       if (record) {
-    //         if (today - examEndDate < duration) {
-    //           res.status(401).send({
-    //             message: "Exam is Closed",
-    //             isContinue: false,
-    //             exam: exam,
-    //           });
-    //         } else {
-    //           res.status(200).send({
-    //             message: " Success",
-    //             isContinue: isContinue,
-    //             exam: exam,
-    //           });
-    //         }
-    //       } else {
-    //         res.status(200).send({
-    //           message: " Success",
-    //           isContinue: isContinue,
-    //           exam: exam,
-    //         });
-    //       }
-    //     } else {
-    //       res.status(401).send({
-    //         message: "Exam is Closed",
-    //         isContinue: isContinue,
-    //         exam: exam,
-    //       });
-    //     }
-    //   } else {
-    //     res.status(404).send({ message: "Exam not Found" });
-    //   }
-    // }
   } catch (error) {
     res.status(400).send({ message: "Error", error: error.message });
     return;
@@ -178,71 +116,20 @@ const updateExam = async (req, res) => {
         dateTimeStart: params.dateTimeStart,
         description: params.description,
         duration: params.duration,
+        reviewDuration: params.reviewDuration,
         itemNumber: params.itemNumber,
         title: params.title,
         password: params.password,
       }
       const examData = await Exam.updateOne(
-      { _id: params.exam},
-      { $set: dataToUpdate },
-      { upsert: true }
+        { _id: params.exam},
+        { $set: dataToUpdate },
+        { upsert: true }
       )
+
+      //Update didi an recent access
+      await updateRecentAccess(req.user.id, params.exam)
       res.status(200).send({message: "Success", data: examData})
-      // await Exam.findOne({ _id: mongoose.Types.ObjectId(params.exam) }).then(
-      //   async (exam) => {
-      //     const doChangeDateTimeStart =
-      //       params.dateTimeStart === undefined ? "" : "Modified Date Start, ";
-      //     const doChangeDateTimeEnd =
-      //       params.dateTimeEnd === undefined ? "" : "Modified End, ";
-      //     const doChangeCategory =
-      //       params.category === undefined ? "" : "Modified Category, ";
-      //     const doChangeDuration =
-      //       params.duration === undefined ? "" : "Modified Duration, ";
-      //     const doChangeItemNumber =
-      //       params.itemNumber === undefined ? "" : "Modified Item number, ";
-
-      //     exam.dateTimeStart =
-      //       doChangeDateTimeStart === ""
-      //         ? new Date(exam.dateTimeStart)
-      //         : new Date(params.dateTimeStart);
-      //     exam.dateTimeEnd =
-      //       doChangeDateTimeEnd === ""
-      //         ? new Date(exam.dateTimeEnd)
-      //         : new Date(params.dateTimeEnd);
-      //     exam.duration =
-      //       doChangeDuration === "" ? exam.duration : params.duration;
-      //     exam.itemNumber =
-      //       doChangeItemNumber === "" ? exam.itemNumber : params.itemNumber;
-      //     exam.category =
-      //       doChangeCategory === ""
-      //         ? mongoose.Types.ObjectId(exam.category)
-      //         : mongoose.Types.ObjectId(params.category);
-
-      //     if (exam.dateTimeStart > exam.dateTimeEnd) {
-      //       res.status(400).send({ message: "Invalid Time" });
-      //       return;
-      //     }
-      //     exam.log.push({
-      //       user: mongoose.Types.ObjectId(req.user.id),
-      //       detail:
-      //         doChangeDateTimeStart +
-      //         doChangeDateTimeEnd +
-      //         doChangeCategory +
-      //         doChangeDuration +
-      //         doChangeItemNumber,
-      //     });
-      //     await exam.save(async (err, data) => {
-      //       if (err) {
-      //         console.log("ERR? ", err);
-      //         res.status(400).send({ message: "Error", error: err.message });
-      //         return;
-      //       } else {
-      //         res.status(200).send({ message: "Success", data: data });
-      //         return;
-      //       }
-      //     });
-      //   }
-      // );
     } catch (error) {
       return res
         .status(400)
@@ -321,9 +208,6 @@ const attemptExam = async (req, res) => {
           res.status(404).send({ message: "Exam not Found" });
           return;
         } else {
-          //Mag attemp ngae siya igCheck anay an date
-          //Kun mayda record an user pati exam, dapat igContinue la iton
-
           let isContinue = true;
           const today = new Date();
 
@@ -335,22 +219,42 @@ const attemptExam = async (req, res) => {
             return res.status(401).send({ message: "Exam is closed." });
           } else {
             //Para ine kun continuing pa
-            let record = await Record.findOne( {
+            let record = await Record.where({
               exam:mongoose.Types.ObjectId(params.exam),
               student: mongoose.Types.ObjectId(req.user.id),
               isComplete:false
             })
-            if (params.record == null) {
-              record = new Record({
-                exam: mongoose.Types.ObjectId(params.exam),
-                student: mongoose.Types.ObjectId(req.user.id),
+
+            let message = ""
+            if(record == null){
+              message = "Attempt PreTest"
+                record = new recordSchema({
+                exam : ObjectId(data._id),
+                student: ObjectId(req.user.id),
                 isComplete: false,
-                timeStart: today,
-              });
-              isContinue = false;
-              await record.save();
+                preTest: {
+                  timeStart: new Date(),
+                  isComplete: false
+                }
+              })
             }
-            
+            else if(record.PreTest.isComplete == false &&  record.Postest == null){
+              message = "Continue PreTest"
+              isContinue = true
+            }
+            else if(record.PreTest.isComplete && record.Postest == null){
+              message = "Attempt Postest"
+              record.postTest.timeStart = new Date()
+              record.postTest.isComplete = false
+            }
+            else if(record.PreTest.isComplete && record.Postest.isComplete == false){
+              message = "Continue PostTest"
+            }
+            else if(record.isComplete){
+              message = "Exam is Closed"
+            }
+            await record.save()
+            await updateRecentAccess(req.user.id, params.exam)
             res.status(200).send({
               message: "Success",
               exam: data,
@@ -377,7 +281,6 @@ const submitExam = async (req, res) => {
         },
       })
       .populate("student")
-      .populate("answers.question")
       .exec(async (err, data) => {
         if (err) {
           res.status(400).send({ message: "Error", error: err.message });
@@ -386,8 +289,9 @@ const submitExam = async (req, res) => {
           res.status(400).send({ message: "Error", error: "Data not found" });
           return;
         } else {
+         if(data.preTest.isComplete = false){
           const questions = data.exam.questions;
-          const answers = data.answers;
+          const answers = data.preTest.answers;
           let score = 0;
           answers.forEach((answer) => {
             questions.forEach((question) => {
@@ -401,11 +305,34 @@ const submitExam = async (req, res) => {
               }
             });
           });
-          data.score = score;
-          data.answers = answers;
-          data.isComplete = true;
-          data.timeEnd = Date.now();
-          await data.save();
+            data.preTest.score = score;
+            data.preTest.answers = answers;
+            data.preTest.isComplete = true;
+            data.preTest.timeEnd = Date.now();
+            await data.save();
+         }else{
+          const questions = data.exam.questions;
+          const answers = data.postTest.answers;
+          let score = 0;
+          answers.forEach((answer) => {
+            questions.forEach((question) => {
+              if (answer.question && answer.question._id.equals(question._id)) {
+                if (answer.answer === question.answer) {
+                  answer.isCorrect === true;
+                  score++;
+                } else {
+                  answer.isCorrect === false;
+                }
+              }
+            });
+          });
+            data.postTest.score = score;
+            data.postTest.answers = answers;
+            data.postTest.isComplete = true;
+            data.postTest.timeEnd = Date.now();
+            await data.save();
+         }
+         
           data.exam.questions = undefined;
           data.exam.log = undefined;
           data.student.log = undefined;
@@ -413,7 +340,9 @@ const submitExam = async (req, res) => {
           data.student.schoolId = undefined;
           data.student.createdAt = undefined;
           data.student.updatedAt = undefined;
-          console.log("Submit" + data)
+          await updateRecentAccess(req.user.id, data.exam._id)
+          
+         
           return res.status(200).send({ message: "Success", data: data });
           
         }
@@ -423,58 +352,48 @@ const submitExam = async (req, res) => {
   }
 };
 
-const fetchExamProgress = async (req, res) => {
+const triggerReviewDuration = async (req, res) => {
+  
+  const params = req.body;
   try {
-    const { examId } = req.query;
-    let students = [];
-    let checker = false;
-    const noRecord = await userSchema.find({
-      role: "student",
-      status: "approved",
-    });
-    if (noRecord && noRecord.length > 0) {
-      noRecord.map((rec) => students.push(rec._id));
-    } else {
-      return res.status(400).send({ message: "No user found" });
-    }
-    const examData = await attemptExamination(examId);
-    if (examData && examData.length > 0) {
-      const recordList = await Record.find(
-        {
-          student: {
-            $in: students,
-          },
-          exam: examData[0]._id,
-        },
-        {
-          _id: 0,
-          student: 1,
-        }
-      );
-      if (recordList && recordList.length > 0) {
-        if (recordList.length === students.length) {
-          checker = true;
-        } else {
-          checker = false;
-        }
-      } else {
-        checker = false;
+    const exam = Exam.findById(Object(params.examId))
+    const reviewDuration = exam.reviewDuration
+    const start = new Date(exam.dateTimeStart)
+    const end = new Date(exam.dateTimeEnd)
+    start.setDate(start.getDay + reviewDuration)
+    end.setDate(end.getDay + reviewDuration)
+    exam.start = start
+    exam.end = end
+    await exam.save(async (data, err) => {
+      if(err){
+        return res
+          .status(400)
+          .send({ message: "Something went wrong", err: err.message });
+      }else{
+        return res
+        .status(200)
+        .send({ message: "Success", data: data });
       }
-      res.status(200).send({ message: "Success", isTakenByAll: checker });
-      return;
-    }
+    })
   } catch (error) {
-    res
+    return res
       .status(400)
       .send({ message: "Something went wrong", err: error.message });
-    return;
+  
   }
 };
 
+const recentAccess = async (req, res) => {
+  const user = userSchema.findById(req.user.id)
+  return res.status(200).send({message:"OK", data: user.recentAccess})
+};
+
+
+exports.recentAccess = recentAccess
 exports.createExam = createExam;
 exports.getExams = getExams;
 exports.updateExam = updateExam;
 exports.deleteExam = deleteExam;
 exports.attemptExam = attemptExam;
 exports.submitExam = submitExam;
-exports.fetchExamProgress = fetchExamProgress;
+exports.triggerReviewDuration = triggerReviewDuration;

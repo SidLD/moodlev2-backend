@@ -33,8 +33,15 @@ app.use(recordAPI);
 app.use(analysisAPI);
 app.use(compareAPI)
 
-app.get('*', function(req, res){
-    res.status(404).send({message:"URI does not exist"});
+
+
+const userSchema = require("./schemas/userSchema");
+const verifyToken = require('./Utilities/VerifyToken');
+const recordSchema = require('./schemas/recordSchema');
+const { ObjectId } = mongoose.Types;
+
+app.get('*', async function(req, res){
+  res.status(404).send({message:"URI does not exist"});
 });
 app.post('*', function(req, res){
     res.status(404).send({message:"URI does not exist"});

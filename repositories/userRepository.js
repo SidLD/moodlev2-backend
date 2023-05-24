@@ -1,8 +1,13 @@
 const recordSchema = require("../schemas/recordSchema");
 
-const fetchStudentRecords = async () => {
+const fetchStudentRecords = async (year) => {
   try {
     const records = await recordSchema.aggregate([
+      {
+        $expr: {
+          $eq: [{ $year: "$createdAt" }, year]
+        },
+      },
       {
         $lookup: {
           from: "users",

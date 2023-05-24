@@ -89,7 +89,12 @@ const getPassingRate =  async (req,res) => {
         select: "_id firstName lastName schoolId",
       })
       .populate({
-        path: "timeEnd score",
+        path: "preTest",
+        select: "score"
+      })
+      .populate({
+        path: "postTest",
+        path: "score",
       })
       .populate({
         path: "exam",
@@ -101,7 +106,6 @@ const getPassingRate =  async (req,res) => {
       let record = []
       if(records.length > 1){
         records.forEach(d => {
-          console.log(d)
           let total = 0
           try {
             total = d.exam.itemNumber
@@ -138,7 +142,7 @@ const getPassingRate =  async (req,res) => {
                firstName: user.firstName,
                lastName: user.lastName,
                schoolId: user.schoolId,
-               passingRate: passingResult,
+               passingRate:  passingResult.toFixed(2) + "%",
                forecast: f,
                record: record
              }
@@ -150,7 +154,7 @@ const getPassingRate =  async (req,res) => {
                firstName: user.firstName,
                lastName: user.lastName,
                schoolId: user.schoolId,
-               passingRate: passingResult,
+               passingRate: passingResult.toFixed(2) + "%",
                forecast: f,
                
                record: record

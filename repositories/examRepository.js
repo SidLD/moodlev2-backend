@@ -3,6 +3,20 @@ const Exam = require("../schemas/examSchema");
 
 const { ObjectId } = mongoose.Types;
 
+const updateRecentAccess = async(userId,examId) => {
+  const user = userSchema.findById(userId)
+  const recentAccess = user.recentAccess
+  for (let index = recentAccess.length-1; index > 0; index--) {
+    recentAccess[index] = recentAccess[index-1];
+  }
+  recentAccess[0] = ObjectId(examId)
+  if(user.recentAccess >= 6){
+   recentAccess.shift()
+  }
+  user.recentAccess = recentAccess;
+  await user.save();
+}
+
 const attemptExamination = async (examId) => {
   try {
     const res = await Exam.aggregate([
@@ -56,3 +70,4 @@ const attemptExamination = async (examId) => {
 };
 
 exports.attemptExamination = attemptExamination;
+exports.updateRecentAccess = updateRecentAccess;

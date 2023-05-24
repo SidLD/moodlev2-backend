@@ -419,7 +419,8 @@ const rejectAllUsers = async (req, res) => {
 
 const fetchAllStudents = async (req, res) => {
   try {
-    const records = await fetchStudentRecords();
+    
+    const records = await fetchStudentRecords(req.query.year);
     res.status(200).send({ message: "Success", data: records });
   } catch (error) {
     res.status(400).send({ message: "Something went wrong", err: error });

@@ -3,14 +3,16 @@ const Record = require("../schemas/recordSchema");
 const userSchema = require("../schemas/userSchema");
 const { attemptExamination } = require("../repositories/examRepository");
 const recordSchema = require("../schemas/recordSchema");
-
 const { ObjectId } = mongoose.Types;
-
 //magamit didi _id para sa record._id
 const getRecord = async (req, res) => {
   const params = req.query;
   try {
-    Record.where(params)
+    Record.where({
+      $expr: {
+        $eq: [{ $year: "$createdAt" }, params.year]
+      },
+    })
     .populate({
       path: "exam",
       select: "_id dateTimeStart dateTimeEnd duration itemNumer category",
@@ -31,8 +33,7 @@ const getRecord = async (req, res) => {
       try {
         if (req.user.role === "admin" || req.user.role === "superadmin") {
           res.status(200).send({ message: "Success", data: data });
-        } else {
-          
+        } else {  
           data.forEach((record) => {
             //an records na
             let answers = record.answers;
@@ -56,7 +57,6 @@ const getRecord = async (req, res) => {
     res.status(500).send({message: "Error", err:error})
   }
 };
-
 //Pag add la ine san question/answers
 const updateRecord = async (req, res) => {
   const params = req.body;
@@ -66,18 +66,34 @@ const updateRecord = async (req, res) => {
       student: ObjectId(req.user.id),
     });
     if (record) {
-      let ifExist = false;
-      record.answers.forEach((recordAnswer) => {
-        if (recordAnswer.question.equals(ObjectId(params.question))) {
-          recordAnswer.answer = params.answer;
-          ifExist = true;
-        }
-      });
-      if (!ifExist) {
-        record.answers.push({
-          question: ObjectId(params.question),
-          answer: params.answer,
+      if(record.preTest.isComplete == false){
+        let ifExist = false;
+        record.preTest.answers.forEach((recordAnswer) => {
+          if (recordAnswer.question.equals(ObjectId(params.question))) {
+            recordAnswer.answer = params.answer;
+            ifExist = true;
+          }
         });
+        if (!ifExist) {
+          record.preTest.answers.push({
+            question: ObjectId(params.question),
+            answer: params.answer,
+          });
+        }
+      }else{
+        let ifExist = false;
+        record.postTest.answers.forEach((recordAnswer) => {
+          if (recordAnswer.question.equals(ObjectId(params.question))) {
+            recordAnswer.answer = params.answer;
+            ifExist = true;
+          }
+        });
+        if (!ifExist) {
+          record.postTest.answers.push({
+            question: ObjectId(params.question),
+            answer: params.answer,
+          });
+        }
       }
       await record.save();
       res.status(201).send({ message: "Success", record: record });
@@ -88,7 +104,6 @@ const updateRecord = async (req, res) => {
     console.log("ERR: ", error);
   }
 };
-
 const deleteRecord = async (req, res) => {
   const params = req.body;
   try {
@@ -105,50 +120,38 @@ const deleteRecord = async (req, res) => {
     res.status(500).send({message:"Error", err:error})
   }
 };
-
 const getCurrentRecord = async (req, res) => {
   try {
     const params = req.query;
-
-    let data = await Record.where({
-      exam: ObjectId(params.exam),
-      student: ObjectId(req.user.id),
-    });
-    console.log(data[0].isComplete)
-    let record = null
+    let record = await Record.where({
+      exam:mongoose.Types.ObjectId(params.exam),
+      student: mongoose.Types.ObjectId(req.user.id),
+      isComplete:false
+    })
     let message = ""
-    if(data.length !== 0 ){
-      try {
-        if(data[0] == undefined){
-          record = null
-          message = "Pre Test Attempt"
-        }
-        else if(!data[0].isComplete){
-          record = data[0]
-          message = "Continue Pre Test Attempt"
-        }
-        else if(data[1] == undefined){
-          record = null
-          message = "Post Test Attempt"
-        }
-        else if(!data[1].isComplete){
-          record = data[1]
-          message = "Continue Post Test Attempt"
-        }else{
-          message = "No more Attempt"
-          record = null
-        }
-      } catch (error) {
-        console.log(error)
-      }
+    if(record == null){
+      message = "Closed"
     }
-    console.log(record)
-    res.status(200).send({ message: "Success", data: record, message: message, records: data });
+    else if(record.PreTest.isComplete == false &&  record.Postest == null){
+      message = "Continue PreTest"
+      isContinue = true
+    }
+    else if(record.PreTest.isComplete && record.Postest == null){
+      message = "Attempt Postest"
+      isContinue = true
+    }
+    else if(record.PreTest.isComplete && record.Postest.isComplete == false){
+      message = "Continue PostTest"
+    }
+    else if(record.isComplete){
+      message = "Exam is Closed"
+    }
+    await updateRecentAccess(req.user.id, params.exam)
+    res.status(200).send({ message: message, record: record});
   } catch (error) {
     res.status(400).send({ message: "Error", error: error.message });
   }
 };
-
 const forceStartExam = async (req, res) => {
   try {
     const { examId } = req.body;
@@ -225,7 +228,6 @@ const forceStartExam = async (req, res) => {
     res.status(400).send({ message: "Error", error: error.message });
   }
 };
-
 exports.getRecord = getRecord;
 exports.deleteRecord = deleteRecord;
 exports.updateRecord = updateRecord;

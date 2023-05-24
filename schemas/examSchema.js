@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-
 const logSchema = mongoose.Schema(
   {
     user: {
@@ -33,6 +32,9 @@ const examSchema = mongoose.Schema(
       type: Number,
       min: 1,
     },
+    reviewDuration:{
+      type: Number
+    },
     password: {
       type: String,
     },
@@ -50,11 +52,16 @@ const examSchema = mongoose.Schema(
         ref: "Question",
       },
     ],
+    forceTakeExamStudents:[
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      }
+    ],
     log: [logSchema],
   },
   {
     timestamps: true,
   }
 );
-
 module.exports = mongoose.model("Exam", examSchema);
